@@ -2277,7 +2277,7 @@ namespace RE.BusinesLogic
                             objProj.Images = JsonConvert.DeserializeObject<List<ProjectsReviewAttachments>>(json);
 
                             objProj.Date = Convert.ToDateTime(dr["UpdatedDate"].ToString());
-                            if(objProj.Images.Count > 0)
+                            if(objProj.Images?.Count > 0)
                             {
                                 objProj.Images.ForEach(x => x.PhotoName = RoutePath + "/ReviewImages/" + x.PhotoName);
 
