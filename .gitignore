@@ -1,0 +1,16 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/RE
+/RE/bin/RE.pdb
+/RE/bin/RE.dll
+/RE/obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
+/RE/obj/Debug/RE.csproj.AssemblyReference.cache
+/RE/obj/Debug/RE.csproj.CopyComplete
+/RE/obj/Debug/RE.csproj.CoreCompileInputs.cache
+/RE/obj/Debug/RE.csproj.FileListAbsolute.txt
+/RE/obj/Debug/RE.csproj.Up2Date
+/RE/obj/Debug/RE.csprojAssemblyReference.cache
+/RE/obj/Debug/RE.dll
+/RE/obj/Debug/RE.pdb
