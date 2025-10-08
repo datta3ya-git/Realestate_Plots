@@ -64,6 +64,19 @@ namespace RE.Models
         public SqydPrice sqydPrice { get; set; }
         public string AuthoritiesInfo { get; set; }
         public string ProjectHighlights { get; set; }
+
+        public int ViewedCount { get; set; }
+        public string OrganizationName { get; set; }
+        public string OrgLogoUrl { get; set; }
+        public string OrgCoverImageUrl { get; set; }
+        public string YearOfEstablishment { get; set; }
+        public string OrgContactPerson { get; set; }
+        public string OrgContactEmail { get; set; }
+        public string OrgContactPhone { get; set; }
+        public string OrgWebsite { get; set; }
+        public int LikedCount { get; set; }
+        public bool isUserLiked { get; set; }
+        public int Org_id { get; set; }
     }
 
     public class ProjectsAttachments
@@ -160,6 +173,19 @@ namespace RE.Models
         public string Person2Mobile1 { get; set; }
         public string Person2Mobile2 { get; set; }
         public string ProjectHighlights { get; set; }
+
+        public int ViewedCount  { get; set; }
+        public string OrganizationName { get; set; }
+        public string OrgLogoUrl { get; set; }
+        public string OrgCoverImageUrl { get; set; }
+        public string YearOfEstablishment { get; set; }
+        public string OrgContactPerson { get; set; }
+        public string OrgContactEmail { get; set; }
+        public string OrgContactPhone { get; set; }
+        public string OrgWebsite { get; set; }
+        public int LikedCount { get; set; }
+        public bool isUserLiked  { get; set; }
+        public int Org_id { get; set; }
     }
 
     public class ProjectAssign
@@ -246,5 +272,12 @@ namespace RE.Models
         public int StatusCode { get; set; }
         public string Message { get; set; }
         public List<ProjectReview> ProjectReview { get; set; }
+    }
+
+    public class OrgProjectResponce
+    {
+        public int StatusCode { get; set; }
+        public string Message { get; set; }
+        public List<Projects> Projects { get; set; }
     }
 }

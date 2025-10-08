@@ -61,7 +61,7 @@ namespace RE.BusinesLogic
                     sqlCon.Open();
                     SqlCommand sql_cmnd = new SqlCommand("sp_DeactivateUser", sqlCon);
                     sql_cmnd.CommandType = CommandType.StoredProcedure;
-                    
+
                     sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = user.UserID;
                     sql_cmnd.ExecuteNonQuery();
                     sqlCon.Close();
@@ -127,6 +127,8 @@ namespace RE.BusinesLogic
                     sql_cmnd.Parameters.AddWithValue("@AuthoritiesInfo", SqlDbType.VarChar).Value = project.AuthoritiesInfo == null ? "" : project.AuthoritiesInfo;
                     sql_cmnd.Parameters.AddWithValue("@SQYDPrice", SqlDbType.VarChar).Value = JsonConvert.SerializeObject(project.sqydPrice);
                     sql_cmnd.Parameters.AddWithValue("@ProjectHighlights", SqlDbType.VarChar).Value = project.ProjectHighlights == null ? "" : project.ProjectHighlights;
+                    sql_cmnd.Parameters.AddWithValue("@Org_id", SqlDbType.Int).Value = project.Org_id == 0 ? 1 : project.Org_id;
+
                     sql_cmnd.ExecuteNonQuery();
                     sqlCon.Close();
                     responce = "200";
@@ -220,7 +222,6 @@ namespace RE.BusinesLogic
                             objProj.AuthoritiesInfo = dr["AuthoritiesInfo"] != null ? dr["AuthoritiesInfo"].ToString() : "";
                             if (dr["SQYDPrice"] != null && dr["SQYDPrice"].ToString() != "")
                                 objProj.sqydPrice = JsonConvert.DeserializeObject<SqydPrice>(dr["SQYDPrice"] != null ? dr["SQYDPrice"].ToString() : "");
-                            projects.Add(objProj);
 
                             objProj.ContactPerson1 = dr["ContactPerson1"] != null ? dr["ContactPerson1"].ToString() : "";
                             objProj.ContactPerson2 = dr["ConctactPerson2"] != null ? dr["ConctactPerson2"].ToString() : "";
@@ -229,6 +230,22 @@ namespace RE.BusinesLogic
                             objProj.Person2Mobile1 = dr["Person2Mobile1"] != null ? dr["Person2Mobile1"].ToString() : "";
                             objProj.Person2Mobile2 = dr["Person2Mobile2"] != null ? dr["Person2Mobile2"].ToString() : "";
                             objProj.ProjectHighlights = dr["ProjectHighlights"] != null ? dr["ProjectHighlights"].ToString() : "";
+
+                            objProj.ViewedCount = dr["ViewedCount"] != null && dr["ViewedCount"].ToString() != "" ? Convert.ToInt32(dr["ViewedCount"].ToString()) : 0;
+                            objProj.LikedCount = dr["LikedCount"] != null && dr["LikedCount"].ToString() != "" ? Convert.ToInt32(dr["LikedCount"].ToString()) : 0;
+                            objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]); 
+
+                            objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
+                            objProj.OrgLogoUrl = dr["LogoUrl"] != null ? dr["LogoUrl"].ToString() : "";
+                            objProj.OrgCoverImageUrl = dr["CoverImageUrl"] != null ? dr["CoverImageUrl"].ToString() : "";
+                            objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
+                            objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
+                            objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
+                            objProj.OrgContactPhone = dr["ContactPhone"] != null ? dr["ContactPhone"].ToString() : "";
+                            objProj.OrgWebsite = dr["Website"] != null ? dr["Website"].ToString() : "";
+                            objProj.Org_id = dr["OrganizationId"] != null && dr["OrganizationId"].ToString() != "" ? Convert.ToInt32(dr["OrganizationId"].ToString()) : 0;
+
+                            projects.Add(objProj);
                         }
 
                     }
@@ -449,6 +466,21 @@ namespace RE.BusinesLogic
                                 }
                                 objProj.AllRoadsInfo = RoadsInfo;
                             }
+
+                            objProj.ViewedCount = dr["ViewedCount"] != null && dr["ViewedCount"].ToString() != "" ? Convert.ToInt32(dr["ViewedCount"].ToString()) : 0;
+                            objProj.LikedCount = dr["LikedCount"] != null && dr["LikedCount"].ToString() != "" ? Convert.ToInt32(dr["LikedCount"].ToString()) : 0;
+                            objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
+
+                            objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
+                            objProj.OrgLogoUrl = dr["LogoUrl"] != null ? dr["LogoUrl"].ToString() : "";
+                            objProj.OrgCoverImageUrl = dr["CoverImageUrl"] != null ? dr["CoverImageUrl"].ToString() : "";
+                            objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
+                            objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
+                            objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
+                            objProj.OrgContactPhone = dr["ContactPhone"] != null ? dr["ContactPhone"].ToString() : "";
+                            objProj.OrgWebsite = dr["Website"] != null ? dr["Website"].ToString() : "";
+                            objProj.Org_id = dr["OrganizationId"] != null && dr["OrganizationId"].ToString() != "" ? Convert.ToInt32(dr["OrganizationId"].ToString()) : 0;
+
                         }
 
                     }
@@ -1221,7 +1253,7 @@ namespace RE.BusinesLogic
             return Users;
         }
 
-        public string SaveLikeProjects(LikeProjects Proj)
+        public string SaveBookmarkProjects(LikeProjects Proj)
         {
             string responce = string.Empty;
             try
@@ -1229,7 +1261,7 @@ namespace RE.BusinesLogic
                 using (sqlCon = new SqlConnection(SqlconString))
                 {
                     sqlCon.Open();
-                    SqlCommand sql_cmnd = new SqlCommand("usp_SaveLikeProjects", sqlCon);
+                    SqlCommand sql_cmnd = new SqlCommand("usp_SaveBookmarkProjects", sqlCon);
                     sql_cmnd.CommandType = CommandType.StoredProcedure;
                     sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = Proj.ProjectID;
                     sql_cmnd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = Proj.PlotID;
@@ -1251,7 +1283,7 @@ namespace RE.BusinesLogic
             return responce;
         }
 
-        public List<ProjectsMini> GetLikedProject(LikeProjects proj)
+        public List<ProjectsMini> GetBookmarkProjects(LikeProjects proj)
         {
             List<ProjectsMini> projects = new List<ProjectsMini>();
             var ds = new DataSet();
@@ -1261,7 +1293,7 @@ namespace RE.BusinesLogic
                 using (sqlCon = new SqlConnection(SqlconString))
                 {
                     sqlCon.Open();
-                    SqlCommand sql_cmnd = new SqlCommand("usp_GetLikedProjectsOrPlots", sqlCon);
+                    SqlCommand sql_cmnd = new SqlCommand("usp_GetBookmarkProjectsOrPlots", sqlCon);
                     sql_cmnd.CommandType = CommandType.StoredProcedure;
                     sql_cmnd.Parameters.AddWithValue("@UserId", SqlDbType.Int).Value = proj.UserID;
                     var adapter = new SqlDataAdapter(sql_cmnd);
@@ -1328,6 +1360,20 @@ namespace RE.BusinesLogic
                             objProj.Person2Mobile2 = dr["Person2Mobile2"] != null ? dr["Person2Mobile2"].ToString() : "";
                             objProj.ProjectHighlights = dr["ProjectHighlights"] != null ? dr["ProjectHighlights"].ToString() : "";
 
+                            objProj.ViewedCount = dr["ViewedCount"] != null && dr["ViewedCount"].ToString() != "" ? Convert.ToInt32(dr["ViewedCount"].ToString()) : 0;
+                            objProj.LikedCount = dr["LikedCount"] != null && dr["LikedCount"].ToString() != "" ? Convert.ToInt32(dr["LikedCount"].ToString()) : 0;
+                            objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
+
+                            objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
+                            objProj.OrgLogoUrl = dr["LogoUrl"] != null ? dr["LogoUrl"].ToString() : "";
+                            objProj.OrgCoverImageUrl = dr["CoverImageUrl"] != null ? dr["CoverImageUrl"].ToString() : "";
+                            objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
+                            objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
+                            objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
+                            objProj.OrgContactPhone = dr["ContactPhone"] != null ? dr["ContactPhone"].ToString() : "";
+                            objProj.OrgWebsite = dr["Website"] != null ? dr["Website"].ToString() : "";
+                            objProj.Org_id = dr["OrganizationId"] != null && dr["OrganizationId"].ToString() != "" ? Convert.ToInt32(dr["OrganizationId"].ToString()) : 0;
+
                             projects.Add(objProj);
                         }
 
@@ -1367,8 +1413,8 @@ namespace RE.BusinesLogic
                             var Notification = dr["Notification"] != null ? dr["Notification"].ToString() : "";
                             var VentureAdmin = dr["VentureAdmin"] != null ? dr["VentureAdmin"].ToString() : "";
                             var DeviceID = dr["DeviceID"] != null ? dr["DeviceID"].ToString() : "";
-                           
-                            if (Notification != "" && DeviceID !="")
+
+                            if (Notification != "" && DeviceID != "")
                             {
                                 FCMNotification objFCM = new FCMNotification();
                                 objFCM.GenerateFCM_Auth_SendNotifcn(ConfigurationManager.AppSettings["FCM_Project_Title"], Notification, DeviceID);
@@ -1385,7 +1431,7 @@ namespace RE.BusinesLogic
             catch (Exception Ex)
             {
                 ExceptionLogs("DBLogic", "SaveEnquiryProjects", Ex.ToString());
-                   responce = "500";
+                responce = "500";
                 sqlCon.Close();
             }
 
@@ -1667,7 +1713,6 @@ namespace RE.BusinesLogic
                             objProj.AuthoritiesInfo = dr["AuthoritiesInfo"] != null ? dr["AuthoritiesInfo"].ToString() : "";
                             if (dr["SQYDPrice"] != null && dr["SQYDPrice"].ToString() != "")
                                 objProj.sqydPrice = JsonConvert.DeserializeObject<SqydPrice>(dr["SQYDPrice"] != null ? dr["SQYDPrice"].ToString() : "");
-                            projects.Add(objProj);
 
                             objProj.ContactPerson1 = dr["ContactPerson1"] != null ? dr["ContactPerson1"].ToString() : "";
                             objProj.ContactPerson2 = dr["ConctactPerson2"] != null ? dr["ConctactPerson2"].ToString() : "";
@@ -1676,6 +1721,23 @@ namespace RE.BusinesLogic
                             objProj.Person2Mobile1 = dr["Person2Mobile1"] != null ? dr["Person2Mobile1"].ToString() : "";
                             objProj.Person2Mobile2 = dr["Person2Mobile2"] != null ? dr["Person2Mobile2"].ToString() : "";
                             objProj.ProjectHighlights = dr["ProjectHighlights"] != null ? dr["ProjectHighlights"].ToString() : "";
+
+                            objProj.ViewedCount = dr["ViewedCount"] != null && dr["ViewedCount"].ToString() != "" ? Convert.ToInt32(dr["ViewedCount"].ToString()) : 0;
+                            objProj.LikedCount = dr["LikedCount"] != null && dr["LikedCount"].ToString() != "" ? Convert.ToInt32(dr["LikedCount"].ToString()) : 0;
+                            objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
+
+                            objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
+                            objProj.OrgLogoUrl = dr["LogoUrl"] != null ? dr["LogoUrl"].ToString() : "";
+                            objProj.OrgCoverImageUrl = dr["CoverImageUrl"] != null ? dr["CoverImageUrl"].ToString() : "";
+                            objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
+                            objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
+                            objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
+                            objProj.OrgContactPhone = dr["ContactPhone"] != null ? dr["ContactPhone"].ToString() : "";
+                            objProj.OrgWebsite = dr["Website"] != null ? dr["Website"].ToString() : "";
+                            objProj.Org_id = dr["OrganizationId"] != null && dr["OrganizationId"].ToString() != "" ? Convert.ToInt32(dr["OrganizationId"].ToString()) : 0;
+
+                            projects.Add(objProj);
+
                         }
 
                     }
@@ -1717,7 +1779,7 @@ namespace RE.BusinesLogic
         }
 
 
-        public List<ProjectsMini> GetProjectsListBasedOnRange(Coordinates objCoord)
+        public List<ProjectsMini> GetProjectsListBasedOnRange(Coordinates objCoord, bool isViewedCount = false)
         {
             List<ProjectsMini> projects = new List<ProjectsMini>();
             var ds = new DataSet();
@@ -1804,6 +1866,21 @@ namespace RE.BusinesLogic
                                 objProj.Person2Mobile2 = dr["Person2Mobile2"] != null ? dr["Person2Mobile2"].ToString() : "";
                                 objProj.ProjectHighlights = dr["ProjectHighlights"] != null ? dr["ProjectHighlights"].ToString() : "";
 
+
+                                objProj.ViewedCount = dr["ViewedCount"] != null && dr["ViewedCount"].ToString() != "" ? Convert.ToInt32(dr["ViewedCount"].ToString()) : 0;
+                                objProj.LikedCount = dr["LikedCount"] != null && dr["LikedCount"].ToString() != "" ? Convert.ToInt32(dr["LikedCount"].ToString()) : 0;
+                                objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
+
+                                objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
+                                objProj.OrgLogoUrl = dr["LogoUrl"] != null ? dr["LogoUrl"].ToString() : "";
+                                objProj.OrgCoverImageUrl = dr["CoverImageUrl"] != null ? dr["CoverImageUrl"].ToString() : "";
+                                objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
+                                objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
+                                objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
+                                objProj.OrgContactPhone = dr["ContactPhone"] != null ? dr["ContactPhone"].ToString() : "";
+                                objProj.OrgWebsite = dr["Website"] != null ? dr["Website"].ToString() : "";
+                                objProj.Org_id = dr["OrganizationId"] != null && dr["OrganizationId"].ToString() != "" ? Convert.ToInt32(dr["OrganizationId"].ToString()) : 0;
+
                                 projects.Add(objProj);
                             }
                         }
@@ -1813,6 +1890,11 @@ namespace RE.BusinesLogic
             catch (Exception Ex)
             {
                 sqlCon.Close();
+            }
+
+            if (!isViewedCount && projects.Count > 0)
+            {
+                return projects.OrderByDescending(x => x.ProjectID).ToList();
             }
 
             return projects;
@@ -2002,7 +2084,7 @@ namespace RE.BusinesLogic
                     {
                         foreach (DataRow dr in ds.Tables[0].Rows)
                         {
-                            if(Convert.ToInt32(dr["RoleID"].ToString()) == users.Role)
+                            if (Convert.ToInt32(dr["RoleID"].ToString()) == users.Role)
                             {
                                 sendOTP = false;
                             }
@@ -2044,7 +2126,7 @@ namespace RE.BusinesLogic
                     {
                         objUserOtp.OTP = "";
                         objUserOtp.Message = "User Already exists with the same Mobile and Role.";
-                    }                    
+                    }
                 }
             }
             catch (Exception Ex)
@@ -2190,10 +2272,10 @@ namespace RE.BusinesLogic
                     SqlCommand sql_cmnd = new SqlCommand("sp_InsertProjectReview", sqlCon);
                     sql_cmnd.CommandType = CommandType.StoredProcedure;
 
-                    sql_cmnd.Parameters.AddWithValue("@PRID", SqlDbType.Int).Value = project.PRID.HasValue ? project.PRID : 0; 
+                    sql_cmnd.Parameters.AddWithValue("@PRID", SqlDbType.Int).Value = project.PRID.HasValue ? project.PRID : 0;
                     sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = project.UserID;
                     sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = project.ProjectID;
-                    sql_cmnd.Parameters.AddWithValue("@RevirwTitle", SqlDbType.VarChar).Value = string.IsNullOrWhiteSpace(project.RevirwTitle)? "" : project.RevirwTitle;
+                    sql_cmnd.Parameters.AddWithValue("@RevirwTitle", SqlDbType.VarChar).Value = string.IsNullOrWhiteSpace(project.RevirwTitle) ? "" : project.RevirwTitle;
                     sql_cmnd.Parameters.AddWithValue("@ReviewDesc", SqlDbType.VarChar).Value = string.IsNullOrWhiteSpace(project.ReviewDesc) ? "" : project.ReviewDesc;
                     sql_cmnd.Parameters.AddWithValue("@Rating", SqlDbType.Int).Value = project.Rating;
                     sql_cmnd.Parameters.AddWithValue("@Images", SqlDbType.VarChar).Value = reviewImages;
@@ -2277,7 +2359,7 @@ namespace RE.BusinesLogic
                             objProj.Images = JsonConvert.DeserializeObject<List<ProjectsReviewAttachments>>(json);
 
                             objProj.Date = Convert.ToDateTime(dr["UpdatedDate"].ToString());
-                            if(objProj.Images?.Count > 0)
+                            if (objProj.Images?.Count > 0)
                             {
                                 objProj.Images.ForEach(x => x.PhotoName = RoutePath + "/ReviewImages/" + x.PhotoName);
 
@@ -2417,7 +2499,7 @@ namespace RE.BusinesLogic
                             objProj.AssignedUserID = Convert.ToInt32(dr["AssignedTo"].ToString());
                             objProj.AssignStatus = dr["AssignStatus"] != null ? dr["AssignStatus"].ToString() : "";
                             objProj.Comments = dr["Comments"] != null ? dr["Comments"].ToString() : "";
-                            objProj.CommentedDate = string.IsNullOrWhiteSpace(dr["CommentedDate"].ToString()) ? DateTime.Now: Convert.ToDateTime(dr["CommentedDate"].ToString());
+                            objProj.CommentedDate = string.IsNullOrWhiteSpace(dr["CommentedDate"].ToString()) ? DateTime.Now : Convert.ToDateTime(dr["CommentedDate"].ToString());
                             objProj.AssignedName = dr["Name"] != null ? dr["Name"].ToString() : "";
 
                             projects.Add(objProj);
@@ -2432,6 +2514,381 @@ namespace RE.BusinesLogic
             }
 
             return projects;
+        }
+
+        #region Terms & Conditions
+        public Terms_ConditionsInfo AddTermsAndConditions(Terms_Conditions objTerm)
+        {
+            Terms_ConditionsInfo terms = new Terms_ConditionsInfo();
+            var ds = new DataSet();
+            try
+            {
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("sp_AddTermsAndConditions", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@CreatedBy", SqlDbType.Int).Value = objTerm.UserId;
+                    sql_cmnd.Parameters.AddWithValue("@Title", SqlDbType.NVarChar).Value = objTerm.Title;
+                    sql_cmnd.Parameters.AddWithValue("@Content", SqlDbType.NVarChar).Value = objTerm.Content;
+                    var adapter = new SqlDataAdapter(sql_cmnd);
+                    adapter.Fill(ds);
+                    sqlCon.Close();
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            terms.NewTermsId = dr["NewTermsId"] != null ? Convert.ToInt32(dr["NewTermsId"].ToString()) : 0;
+                            terms.VersionNumber = dr["VersionNumber"] != null ? Convert.ToInt32(dr["VersionNumber"].ToString()) : 0;
+                        }
+                    }
+                }
+            }
+            catch (Exception Ex)
+            {
+                sqlCon.Close();
+            }
+            return terms;
+        }
+
+        public bool RecordUserTermsApproval(Terms_Conditions objTerm)
+        {
+            bool res = false;
+
+            var ds = new DataSet();
+            try
+            {
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("sp_RecordUserTermsApproval", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@UserId", SqlDbType.Int).Value = objTerm.UserId;
+                    sql_cmnd.Parameters.AddWithValue("@IPAddress", SqlDbType.NVarChar).Value = objTerm.IPAddress;
+                    sql_cmnd.Parameters.AddWithValue("@DeviceInfo", SqlDbType.NVarChar).Value = objTerm.DeviceInfo;
+                    var adapter = new SqlDataAdapter(sql_cmnd);
+                    adapter.Fill(ds);
+                    sqlCon.Close();
+                    res = true;
+                }
+            }
+            catch (Exception Ex)
+            {
+                res = false;
+                sqlCon.Close();
+            }
+            return res;
+        }
+
+        public bool CheckUserTermsStatus(Terms_Conditions objTerm)
+        {
+            bool isAccepted = false;
+            var ds = new DataSet();
+            try
+            {
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("sp_CheckUserTermsStatus", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@UserId", SqlDbType.Int).Value = objTerm.UserId;
+                    var adapter = new SqlDataAdapter(sql_cmnd);
+                    adapter.Fill(ds);
+                    sqlCon.Close();
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            var IsApproved = dr["IsApproved"] != null ? Convert.ToInt32(dr["IsApproved"].ToString()) : 0;
+                            isAccepted = IsApproved == 1 ? true : false;
+                        }
+                    }
+                }
+            }
+            catch (Exception Ex)
+            {
+                sqlCon.Close();
+            }
+            return isAccepted;
+        }
+
+        #endregion
+
+
+        public string LikeProject(LikeProjects Proj)
+        {
+            string responce = string.Empty;
+            try
+            {
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("usp_SaveLikeProjects", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = Proj.ProjectID;
+                    sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = Proj.UserID;
+                    sql_cmnd.Parameters.AddWithValue("@Like", SqlDbType.Bit).Value = Proj.isLiked;
+
+                    sql_cmnd.ExecuteNonQuery();
+                    sqlCon.Close();
+                }
+
+                responce = "200";
+            }
+            catch (Exception Ex)
+            {
+                responce = "500";
+                sqlCon.Close();
+            }
+
+            return responce;
+        }
+
+        public List<Organization> ManageOrganization(Organization org, string action)
+        {
+            List<Organization> organizations = new List<Organization>();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                using (SqlConnection sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand cmd = new SqlCommand("usp_Organization_CRUD", sqlCon);
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    // Common parameters
+                    cmd.Parameters.AddWithValue("@Action", action);
+
+                    if (action == "INSERT" || action == "UPDATE")
+                    {
+                        cmd.Parameters.AddWithValue("@OrganizationId", org.OrganizationId);
+                        cmd.Parameters.AddWithValue("@OrganizationName", org.OrganizationName ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@OrganizationType", org.OrganizationType ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ContactPerson", org.ContactPerson ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ContactEmail", org.ContactEmail ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ContactPhone", org.ContactPhone ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@AlternatePhone", org.AlternatePhone ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@Website", org.Website ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@AddressLine1", org.AddressLine1 ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@AddressLine2", org.AddressLine2 ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@City", org.City ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@State", org.State ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@Country", org.Country ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@PostalCode", org.PostalCode ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@RegistrationNumber", org.RegistrationNumber ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@GSTNumber", org.GSTNumber ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@PANNumber", org.PANNumber ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@TANNumber", org.TANNumber ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ISO_Certification", org.ISO_Certification ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@YearOfEstablishment", org.YearOfEstablishment ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@LogoUrl", org.LogoUrl ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@CoverImageUrl", org.CoverImageUrl ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@CreatedBy", org.CreatedBy ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ModifiedBy", org.ModifiedBy ?? (object)DBNull.Value);
+                    }
+                    else if (action == "GET")
+                    {
+                        if (org == null)
+                            cmd.Parameters.AddWithValue("@OrganizationId", null);
+                        else
+                            cmd.Parameters.AddWithValue("@OrganizationId", org.OrganizationId);
+                    }
+
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    da.Fill(ds);
+                    sqlCon.Close();
+
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            Organization o = new Organization();
+                            o.OrganizationId = dr["OrganizationId"] != DBNull.Value ? Convert.ToInt64(dr["OrganizationId"]) : 0;
+                            o.OrganizationCode = dr["OrganizationCode"]?.ToString();
+                            o.OrganizationName = dr["OrganizationName"]?.ToString();
+                            o.OrganizationType = dr["OrganizationType"]?.ToString();
+                            o.ContactPerson = dr["ContactPerson"]?.ToString();
+                            o.ContactEmail = dr["ContactEmail"]?.ToString();
+                            o.ContactPhone = dr["ContactPhone"]?.ToString();
+                            o.AlternatePhone = dr["AlternatePhone"]?.ToString();
+                            o.Website = dr["Website"]?.ToString();
+                            o.AddressLine1 = dr["AddressLine1"]?.ToString();
+                            o.AddressLine2 = dr["AddressLine2"]?.ToString();
+                            o.City = dr["City"]?.ToString();
+                            o.State = dr["State"]?.ToString();
+                            o.Country = dr["Country"]?.ToString();
+                            o.PostalCode = dr["PostalCode"]?.ToString();
+                            o.RegistrationNumber = dr["RegistrationNumber"]?.ToString();
+                            o.GSTNumber = dr["GSTNumber"]?.ToString();
+                            o.PANNumber = dr["PANNumber"]?.ToString();
+                            o.TANNumber = dr["TANNumber"]?.ToString();
+                            o.ISO_Certification = dr["ISO_Certification"]?.ToString();
+                            o.YearOfEstablishment = dr["YearOfEstablishment"] != DBNull.Value ? Convert.ToInt32(dr["YearOfEstablishment"]) : (int?)null;
+                            o.LogoUrl = dr["LogoUrl"]?.ToString();
+                            o.CoverImageUrl = dr["CoverImageUrl"]?.ToString();
+                            o.IsActive = dr["IsActive"] != DBNull.Value && Convert.ToBoolean(dr["IsActive"]);
+                            o.IsDeleted = dr["IsDeleted"] != DBNull.Value && Convert.ToBoolean(dr["IsDeleted"]);
+                            organizations.Add(o);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
+            }
+
+            return organizations;
+        }
+
+        public List<Projects> GetProjectbyOrgID(Projects proj)
+        {
+
+            List<Projects> objProjs = new List<Projects>();
+            var ds = new DataSet();
+            try
+            {
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("usp_getProjectsByOrgID", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@Org_id", SqlDbType.Int).Value = proj.Org_id;
+                    var adapter = new SqlDataAdapter(sql_cmnd);
+
+                    adapter.Fill(ds);
+                    sqlCon.Close();
+
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            Projects objProj = new Projects();
+                            objProj.Name = dr["Name"] != null ? dr["Name"].ToString() : "";
+                            objProj.Address = dr["Address"] != null ? dr["Address"].ToString() : "";
+                            objProj.District = dr["District"] != null ? dr["District"].ToString() : "";
+                            objProj.State = dr["State"] != null ? dr["State"].ToString() : "";
+                            objProj.PostalCode = dr["PostalCode"] != null ? dr["PostalCode"].ToString() : "";
+                            objProj.Landmark = dr["Landmark"] != null ? dr["Landmark"].ToString() : "";
+                            objProj.ContactPerson1 = dr["ContactPerson1"] != null ? dr["ContactPerson1"].ToString() : "";
+                            objProj.ContactPerson2 = dr["ConctactPerson2"] != null ? dr["ConctactPerson2"].ToString() : "";
+                            objProj.Person1Mobile1 = dr["Person1Mobile1"] != null ? dr["Person1Mobile1"].ToString() : "";
+                            objProj.Person1Mobile2 = dr["Person1Mobile2"] != null ? dr["Person1Mobile2"].ToString() : "";
+                            objProj.Person2Mobile1 = dr["Person2Mobile1"] != null ? dr["Person2Mobile1"].ToString() : "";
+                            objProj.Person2Mobile2 = dr["Person2Mobile2"] != null ? dr["Person2Mobile2"].ToString() : "";
+                            objProj.ProjectHighlights = dr["ProjectHighlights"] != null ? dr["ProjectHighlights"].ToString() : "";
+                            objProj.Emails = dr["Emails"] != null ? dr["Emails"].ToString() : "";
+                            objProj.Description = dr["Description"] != null ? dr["Description"].ToString() : "";
+
+                            if (dr["Photos"] != null && dr["Photos"].ToString() != "")
+                                objProj.Photos = JsonConvert.DeserializeObject<List<files>>(dr["Photos"] != null ? dr["Photos"].ToString() : "");
+
+                            if (dr["Documents"] != null && dr["Documents"].ToString() != "")
+                                objProj.Documents = JsonConvert.DeserializeObject<List<files>>(dr["Documents"] != null ? dr["Documents"].ToString() : "");
+
+                            if (dr["Brocher"] != null && dr["Brocher"].ToString() != "")
+                                objProj.Brocher = JsonConvert.DeserializeObject<List<files>>(dr["Brocher"] != null ? dr["Brocher"].ToString() : "");
+
+                            string json = dr["GEOInfo"] != null ? dr["GEOInfo"].ToString() : "";
+                            objProj.GEOInfo = JsonConvert.DeserializeObject<List<Geos>>(json);
+
+                            objProj.Amenities = dr["Amenities"] != null ? dr["Amenities"].ToString() : "";
+                            objProj.Phase = dr["Phase"] != null ? dr["Phase"].ToString() : "";
+                            objProj.Blocks = dr["Blocks"] != null ? dr["Blocks"].ToString() : "";
+
+                            if (dr["Faces"] != null && dr["Faces"].ToString() != "")
+                                objProj.Faces = JsonConvert.DeserializeObject<DirectionFaces>(dr["Faces"] != null ? dr["Faces"].ToString() : "");
+
+                            objProj.Naksha = dr["Naksha"] != null ? dr["Naksha"].ToString() : "";
+                            objProj.RoadsInfo = dr["RoadsInfo"] != null ? dr["RoadsInfo"].ToString() : "";
+                            objProj.NearByFeatures = dr["NearByFeatures"] != null ? dr["NearByFeatures"].ToString() : "";
+                            objProj.Directions = dr["Directions"] != null ? dr["Directions"].ToString() : "";
+                            objProj.Disclamier = dr["Disclamier"] != null ? dr["Disclamier"].ToString() : "";
+                            objProj.TotalArea = dr["TotalArea"] != null ? dr["TotalArea"].ToString() : "";
+                            objProj.Type = dr["Type"] != null ? dr["Type"].ToString() : "";
+                            objProj.ProjectID = dr["ID"] != null ? Convert.ToInt32(dr["ID"].ToString()) : 0;
+
+
+                            objProj.RoadNumber = dr["RoadNumber"] != null ? dr["RoadNumber"].ToString() : "";
+
+                            if (dr["Borders"] != null && dr["Borders"].ToString() != "")
+                                objProj.Borders = JsonConvert.DeserializeObject<DirectionFaces>(dr["Borders"] != null ? dr["Borders"].ToString() : "");
+
+
+                            if (dr["ventureLocation"] != null && dr["ventureLocation"].ToString() != "")
+                                objProj.ventureLocation = JsonConvert.DeserializeObject<Geos>(dr["ventureLocation"] != null ? dr["ventureLocation"].ToString() : "");
+
+                            objProj.SurveyNumber = dr["SurveyNumber"] != null ? dr["SurveyNumber"].ToString() : "";
+
+
+                            objProj.CoverPhotoTitle = dr["CoverPhotoTitle"] != null ? dr["CoverPhotoTitle"].ToString() : "";
+                            objProj.CoverPhoto = !string.IsNullOrEmpty(dr["CoverPhoto"].ToString()) ? RoutePath + "/Images/" + dr["CoverPhoto"].ToString() : "";
+                            objProj.CoverPhotoDecription = dr["CoverPhotoDecription"] != null ? dr["CoverPhotoDecription"].ToString() : "";
+                            objProj.CoverPhotoName = !string.IsNullOrEmpty(dr["CoverPhoto"].ToString()) ? dr["CoverPhoto"].ToString() : "";
+
+                            objProj.BrochurePhotoTitle = dr["BrochurePhotoTitle"] != null ? dr["BrochurePhotoTitle"].ToString() : "";
+                            objProj.BrochurePhoto = !string.IsNullOrEmpty(dr["BrochurePhoto"].ToString()) ? RoutePath + "/Images/" + dr["BrochurePhoto"].ToString() : "";
+                            objProj.BrochurePhotoDecription = dr["BrochurePhotoDecription"] != null ? dr["BrochurePhotoDecription"].ToString() : "";
+                            objProj.BrochurePhotoName = !string.IsNullOrEmpty(dr["BrochurePhoto"].ToString()) ? dr["BrochurePhoto"].ToString() : "";
+
+                            objProj.LogoPhotoTitle = dr["LogoPhotoTitle"] != null ? dr["LogoPhotoTitle"].ToString() : "";
+                            objProj.LogoPhoto = !string.IsNullOrEmpty(dr["LogoPhoto"].ToString()) ? RoutePath + "/Images/" + dr["LogoPhoto"].ToString() : "";
+                            objProj.LogoPhotoDecription = dr["LogoPhotoDecription"] != null ? dr["LogoPhotoDecription"].ToString() : "";
+                            objProj.LogoPhotoName = !string.IsNullOrEmpty(dr["LogoPhoto"].ToString()) ? dr["LogoPhoto"].ToString() : "";
+
+                            objProj.AuthoritiesInfo = dr["AuthoritiesInfo"] != null ? dr["AuthoritiesInfo"].ToString() : "";
+                            if (dr["SQYDPrice"] != null && dr["SQYDPrice"].ToString() != "")
+                                objProj.sqydPrice = JsonConvert.DeserializeObject<SqydPrice>(dr["SQYDPrice"] != null ? dr["SQYDPrice"].ToString() : "");
+
+                            List<ProjectsAttachments> ProjectPhotos = new List<ProjectsAttachments>();
+                            if (ds.Tables.Count > 1)
+                            {
+                                DataRow[] drPhoto = ds.Tables[1].Select("ProjectID = " + objProj.ProjectID.ToString());
+                                if (drPhoto.Length > 0)
+                                {
+                                    foreach (DataRow drp in drPhoto)
+                                    {
+                                        ProjectsAttachments projPhoto = new ProjectsAttachments();
+                                        projPhoto.Photo = !string.IsNullOrEmpty(drp["Attachments"].ToString()) ? RoutePath + "/Images/" + drp["Attachments"].ToString() : "";
+                                        projPhoto.PhotoName = !string.IsNullOrEmpty(drp["Attachments"].ToString()) ? drp["Attachments"].ToString() : "";
+                                        projPhoto.PhotoTitle = drp["Title"] != null ? drp["Title"].ToString() : "";
+                                        projPhoto.PhotoDecription = drp["Decription"] != null ? drp["Decription"].ToString() : "";
+                                        projPhoto.IsCoverPhoto = drp["IsCoverPhoto"] != null ? Convert.ToInt32(drp["IsCoverPhoto"].ToString()) : 0;
+                                        projPhoto.PhotoID = Convert.ToInt32(drp["ID"].ToString());
+                                        ProjectPhotos.Add(projPhoto);
+                                    }
+                                }
+                                objProj.ProjectPhotos = ProjectPhotos;
+                            }
+
+                            objProj.ViewedCount = dr["ViewedCount"] != null && dr["ViewedCount"].ToString() != "" ? Convert.ToInt32(dr["ViewedCount"].ToString()) : 0;
+                            objProj.LikedCount = dr["LikedCount"] != null && dr["LikedCount"].ToString() != "" ? Convert.ToInt32(dr["LikedCount"].ToString()) : 0;
+                            objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
+
+
+                            objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
+                            objProj.OrgLogoUrl = dr["LogoUrl"] != null ? dr["LogoUrl"].ToString() : "";
+                            objProj.OrgCoverImageUrl = dr["CoverImageUrl"] != null ? dr["CoverImageUrl"].ToString() : "";
+                            objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
+                            objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
+                            objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
+                            objProj.OrgContactPhone = dr["ContactPhone"] != null ? dr["ContactPhone"].ToString() : "";
+                            objProj.OrgWebsite = dr["Website"] != null ? dr["Website"].ToString() : "";
+                            objProj.Org_id = proj.Org_id;
+                            objProjs.Add(objProj);
+                        }
+
+                    }
+                }
+            }
+            catch (Exception Ex)
+            {
+                objProjs = new List<Projects>();
+                sqlCon.Close();
+            }
+
+            return objProjs;
         }
 
     }
