@@ -13,6 +13,7 @@ namespace RE.Models
         public int UserID { get; set; }
         public string OTP { get; set; }
         public bool IsFirstLogin { get; set; }
+        public bool IsOrganizationAdmin { get; set; }
     }
     public class InputUserOtp
     {
@@ -44,6 +45,38 @@ namespace RE.Models
         public int StatusCode { get; set; }
         public string Message { get; set; }
         public UserOtp userInfo { get; set; }
+    }
+
+
+    public class newUserLoginFlow
+    {
+        public string Mobile { get; set; }
+        public int Role { get; set; }
+        public string otp { get; set; }
+        public int userId { get; set; }
+        public string Name { get; set; }
+        public string Email { get; set; }
+    }
+
+    public class newUserLoginFlowResponce
+    {
+        public int StatusCode { get; set; }
+        public string Message { get; set; }
+        public UserLoginFlowResponse data { get; set; }
+    }
+
+    public class UserLoginFlowResponse
+    {
+        public int UserID { get; set; }
+        public userInfo userInfo { get; set; }
+        public bool isExistingUser { get; set; }
+        public bool isOrgAdmin { get; set; }
+    }
+
+    public class userInfo
+    {
+        public string email { get; set; }
+        public string name { get; set; }
     }
 
     public class OTPGeneration

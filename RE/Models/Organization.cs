@@ -42,4 +42,29 @@ namespace RE.Models
         public string Message { get; set; }
         public List<Organization> Organization { get; set; }
     }
+
+    public class orgAdmin
+    {
+        public int Org_ID { get; set; }
+        public int User_ID { get; set; }
+        public int CreatedBy { get; set; }
+        public string Type { get; set; }
+
+    }
+
+
+    public class OrgsAdminsInfo
+    {
+        public string UserName { get; set; }
+        public string UserEmail { get; set; }
+        public string UserMobile { get; set; }
+        public int UserID { get; set; } = 0;
+        public Organization OrgData { get; set; }
+    }
+    public class OrgsAdminsInfoResponse
+    {
+        public int StatusCode { get; set; }
+        public string Message { get; set; }
+        public List<OrgsAdminsInfo> Organization { get; set; }
+    }
 }

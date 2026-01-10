@@ -355,6 +355,7 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\Agent.cs" />
+    <Compile Include="Models\Aisensy_SMS.cs" />
     <Compile Include="Models\Common.cs" />
     <Compile Include="Models\Coordinates.cs" />
     <Compile Include="Models\FCMNotification.cs" />

@@ -6,6 +6,7 @@ using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web;
 
 namespace RE.BusinesLogic
@@ -129,6 +130,10 @@ namespace RE.BusinesLogic
                     sql_cmnd.Parameters.AddWithValue("@ProjectHighlights", SqlDbType.VarChar).Value = project.ProjectHighlights == null ? "" : project.ProjectHighlights;
                     sql_cmnd.Parameters.AddWithValue("@Org_id", SqlDbType.Int).Value = project.Org_id == 0 ? 1 : project.Org_id;
 
+                    sql_cmnd.Parameters.AddWithValue("@ApprochRoads", SqlDbType.VarChar).Value = project.ApprochRoads == null ? "" : JsonConvert.SerializeObject(project.ApprochRoads);
+
+                    sql_cmnd.Parameters.AddWithValue("@MapAngle", SqlDbType.VarChar).Value = string.IsNullOrWhiteSpace(project.MapAngle) ? "0" : project.MapAngle;
+
                     sql_cmnd.ExecuteNonQuery();
                     sqlCon.Close();
                     responce = "200";
@@ -233,17 +238,19 @@ namespace RE.BusinesLogic
 
                             objProj.ViewedCount = dr["ViewedCount"] != null && dr["ViewedCount"].ToString() != "" ? Convert.ToInt32(dr["ViewedCount"].ToString()) : 0;
                             objProj.LikedCount = dr["LikedCount"] != null && dr["LikedCount"].ToString() != "" ? Convert.ToInt32(dr["LikedCount"].ToString()) : 0;
-                            objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]); 
+                            objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
 
                             objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
-                            objProj.OrgLogoUrl = dr["LogoUrl"] != null ? dr["LogoUrl"].ToString() : "";
-                            objProj.OrgCoverImageUrl = dr["CoverImageUrl"] != null ? dr["CoverImageUrl"].ToString() : "";
+
+                            objProj.OrgLogoUrl = !string.IsNullOrEmpty(dr["LogoUrl"].ToString()) ? RoutePath + "/Images/" + dr["LogoUrl"]?.ToString() : "";
+                            objProj.OrgCoverImageUrl = !string.IsNullOrEmpty(dr["CoverImageUrl"].ToString()) ? RoutePath + "/Images/" + dr["CoverImageUrl"]?.ToString() : "";
                             objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
                             objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
                             objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
                             objProj.OrgContactPhone = dr["ContactPhone"] != null ? dr["ContactPhone"].ToString() : "";
                             objProj.OrgWebsite = dr["Website"] != null ? dr["Website"].ToString() : "";
                             objProj.Org_id = dr["OrganizationId"] != null && dr["OrganizationId"].ToString() != "" ? Convert.ToInt32(dr["OrganizationId"].ToString()) : 0;
+
 
                             projects.Add(objProj);
                         }
@@ -472,14 +479,19 @@ namespace RE.BusinesLogic
                             objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
 
                             objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
-                            objProj.OrgLogoUrl = dr["LogoUrl"] != null ? dr["LogoUrl"].ToString() : "";
-                            objProj.OrgCoverImageUrl = dr["CoverImageUrl"] != null ? dr["CoverImageUrl"].ToString() : "";
+                            objProj.OrgLogoUrl = !string.IsNullOrEmpty(dr["LogoUrl"].ToString()) ? RoutePath + "/Images/" + dr["LogoUrl"]?.ToString() : "";
+                            objProj.OrgCoverImageUrl = !string.IsNullOrEmpty(dr["CoverImageUrl"].ToString()) ? RoutePath + "/Images/" + dr["CoverImageUrl"]?.ToString() : "";
                             objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
                             objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
                             objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
                             objProj.OrgContactPhone = dr["ContactPhone"] != null ? dr["ContactPhone"].ToString() : "";
                             objProj.OrgWebsite = dr["Website"] != null ? dr["Website"].ToString() : "";
                             objProj.Org_id = dr["OrganizationId"] != null && dr["OrganizationId"].ToString() != "" ? Convert.ToInt32(dr["OrganizationId"].ToString()) : 0;
+
+                            if (dr["ApprochRoads"] != null && dr["ApprochRoads"].ToString() != "")
+                                objProj.ApprochRoads = JsonConvert.DeserializeObject<List<ApproachRoads>>(dr["ApprochRoads"] != null ? dr["ApprochRoads"].ToString() : "");
+
+                            objProj.MapAngle = dr["MapAngle"] != null ? dr["MapAngle"].ToString() : "";
 
                         }
 
@@ -550,6 +562,8 @@ namespace RE.BusinesLogic
                     sql_cmnd.Parameters.AddWithValue("@GEOInfo", SqlDbType.NVarChar).Value = Geoinfo;
                     sql_cmnd.Parameters.AddWithValue("@Borders", SqlDbType.VarChar).Value = Plot.Borders == null ? "" : JsonConvert.SerializeObject(Plot.Borders);
                     sql_cmnd.Parameters.AddWithValue("@RoadNumber", SqlDbType.VarChar).Value = Plot.RoadNumber == null || Plot.RoadNumber == "" ? "" : Plot.RoadNumber;
+                    sql_cmnd.Parameters.AddWithValue("@Description", SqlDbType.VarChar).Value = Plot.PlotDecription ?? "";
+                    sql_cmnd.Parameters.AddWithValue("@Boundaries", SqlDbType.VarChar).Value = Plot.Boundaries == null ? "" : JsonConvert.SerializeObject(Plot.Boundaries);
 
                     sql_cmnd.ExecuteNonQuery();
                     sqlCon.Close();
@@ -617,6 +631,8 @@ namespace RE.BusinesLogic
                             if (dr["Borders"] != null && dr["Borders"].ToString() != "")
                                 objPlots.Borders = JsonConvert.DeserializeObject<DirectionFaces>(dr["Borders"] != null ? dr["Borders"].ToString() : "");
 
+
+                            objPlots.IsApproved = false;
                             if (dr["isApproved"] != null && dr["isApproved"].ToString() != "")
                                 objPlots.IsApproved = Convert.ToBoolean(dr["isApproved"]);
 
@@ -631,6 +647,36 @@ namespace RE.BusinesLogic
                             objPlots.CoverPhoto = !string.IsNullOrEmpty(dr["CoverPhoto"].ToString()) ? RoutePath + "/Images/" + dr["CoverPhoto"].ToString() : "";
                             objPlots.CoverPhotoDecription = dr["CoverPhotoDecription"] != null ? dr["CoverPhotoDecription"].ToString() : "";
                             objPlots.PhotoID = Convert.ToInt32(dr["PhotoID"].ToString());
+
+                            objPlots.PlotDecription = dr["PlotDecription"] != null ? dr["PlotDecription"].ToString() : "";
+
+                            if (dr["Boundaries"] != null && dr["Boundaries"].ToString() != "")
+                                objPlots.Boundaries = JsonConvert.DeserializeObject<DirectionFaces>(dr["Boundaries"] != null ? dr["Boundaries"].ToString() : "");
+
+
+                            if (objPlots.IsSold == 1)
+                            {
+                                // Sold
+                                objPlots.SoldUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
+                                objPlots.SoldUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
+                                objPlots.SoldUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
+                            }
+                            else if (objPlots.IsSold == 2)
+                            {
+                                // Reserved
+                                objPlots.ReservedUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
+                                objPlots.ReservedUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
+                                objPlots.ReservedUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
+                            }
+                            else if (objPlots.IsSold == 3)
+                            {
+                                // Resell
+                                objPlots.ResellUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
+                                objPlots.ResellUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
+                                objPlots.ResellUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
+                            }
+
+                            objPlots.SQYDPrice = dr["PlotPrice"] != null && dr["PlotPrice"].ToString() != "" ? Convert.ToDecimal(dr["PlotPrice"].ToString()) : 0;
 
                             plots.Add(objPlots);
                         }
@@ -849,7 +895,7 @@ namespace RE.BusinesLogic
                     sql_cmnd.CommandType = CommandType.StoredProcedure;
                     sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = Plot.ProjectID;
                     sql_cmnd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = Plot.PlotID;
-                    sql_cmnd.Parameters.AddWithValue("@IsSold", SqlDbType.Bit).Value = Plot.IsSold;
+                    sql_cmnd.Parameters.AddWithValue("@IsSold", SqlDbType.Int).Value = Plot.IsSold;
                     sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = Plot.UserID;
                     sql_cmnd.ExecuteNonQuery();
                     sqlCon.Close();
@@ -865,6 +911,34 @@ namespace RE.BusinesLogic
             return responce;
         }
 
+        public string CancelPlotSold(Plots Plot)
+        {
+            string responce = string.Empty;
+            try
+            {
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("sp_CancelPlotSold", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = Plot.ProjectID;
+                    sql_cmnd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = Plot.PlotID;
+                    sql_cmnd.Parameters.AddWithValue("@IsSold", SqlDbType.Int).Value = Plot.IsSold;
+                    sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = Plot.UserID;
+                    sql_cmnd.Parameters.AddWithValue("@Description", SqlDbType.VarChar).Value = Plot.PlotDecription;
+                    sql_cmnd.ExecuteNonQuery();
+                    sqlCon.Close();
+                }
+                responce = "200";
+            }
+            catch (Exception Ex)
+            {
+                responce = "500";
+                sqlCon.Close();
+            }
+
+            return responce;
+        }
 
         public checkUsersStatus CreateUsers(Users user)
         {
@@ -1365,8 +1439,8 @@ namespace RE.BusinesLogic
                             objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
 
                             objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
-                            objProj.OrgLogoUrl = dr["LogoUrl"] != null ? dr["LogoUrl"].ToString() : "";
-                            objProj.OrgCoverImageUrl = dr["CoverImageUrl"] != null ? dr["CoverImageUrl"].ToString() : "";
+                            objProj.OrgLogoUrl = !string.IsNullOrEmpty(dr["LogoUrl"].ToString()) ? RoutePath + "/Images/" + dr["LogoUrl"]?.ToString() : "";
+                            objProj.OrgCoverImageUrl = !string.IsNullOrEmpty(dr["CoverImageUrl"].ToString()) ? RoutePath + "/Images/" + dr["CoverImageUrl"]?.ToString() : "";
                             objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
                             objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
                             objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
@@ -1727,8 +1801,8 @@ namespace RE.BusinesLogic
                             objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
 
                             objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
-                            objProj.OrgLogoUrl = dr["LogoUrl"] != null ? dr["LogoUrl"].ToString() : "";
-                            objProj.OrgCoverImageUrl = dr["CoverImageUrl"] != null ? dr["CoverImageUrl"].ToString() : "";
+                            objProj.OrgLogoUrl = !string.IsNullOrEmpty(dr["LogoUrl"].ToString()) ? RoutePath + "/Images/" + dr["LogoUrl"]?.ToString() : "";
+                            objProj.OrgCoverImageUrl = !string.IsNullOrEmpty(dr["CoverImageUrl"].ToString()) ? RoutePath + "/Images/" + dr["CoverImageUrl"]?.ToString() : "";
                             objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
                             objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
                             objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
@@ -1872,8 +1946,8 @@ namespace RE.BusinesLogic
                                 objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
 
                                 objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
-                                objProj.OrgLogoUrl = dr["LogoUrl"] != null ? dr["LogoUrl"].ToString() : "";
-                                objProj.OrgCoverImageUrl = dr["CoverImageUrl"] != null ? dr["CoverImageUrl"].ToString() : "";
+                                objProj.OrgLogoUrl = !string.IsNullOrEmpty(dr["LogoUrl"].ToString()) ? RoutePath + "/Images/" + dr["LogoUrl"]?.ToString() : "";
+                                objProj.OrgCoverImageUrl = !string.IsNullOrEmpty(dr["CoverImageUrl"].ToString()) ? RoutePath + "/Images/" + dr["CoverImageUrl"]?.ToString() : "";
                                 objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
                                 objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
                                 objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
@@ -1901,7 +1975,7 @@ namespace RE.BusinesLogic
         }
 
 
-        public UserOtp OtpAutenticatoionAndAuthorization(InputUserOtp users)
+        public async Task<UserOtp> OtpAutenticatoionAndAuthorization(InputUserOtp users)
         {
             bool smsResult = false;
             UserOtp objUserOtp = new UserOtp();
@@ -1931,13 +2005,21 @@ namespace RE.BusinesLogic
                             // Sent OTP
                             string SMSContents = "";
                             SMSContents = otp + SMS_OTP_Message;
-                            smsResult = SMS_OTP_Stop ? true : objotpGen.SendSMS(users.Mobile, SMSContents, otp);
+
+                            Aisensy_SMS objWhatsappSMS = new Aisensy_SMS();
+
+                            //smsResult = SMS_OTP_Stop ? true : objotpGen.SendSMS(users.Mobile, SMSContents, otp);
+
+                            smsResult = SMS_OTP_Stop ? true : await objWhatsappSMS.SendWhatsApp(users.Mobile, otp, ConfigurationManager.AppSettings["SMS_aisensy_LoginOTPTemplet"], "");
+
+
                             if (smsResult)
                             {
                                 objUserOtp.Mobile = dr["Mobile"] != null ? dr["Mobile"].ToString() : "";
                                 objUserOtp.UserID = dr["Id"] != null ? Convert.ToInt32(dr["Id"].ToString()) : 1;
                                 objUserOtp.OTP = otp;
-                                objUserOtp.IsFirstLogin = dr["IsFirstTime"] != null && dr["IsFirstTime"].ToString() != "" ? Convert.ToBoolean(dr["IsFirstTime"].ToString()) : true;
+                                objUserOtp.IsFirstLogin = dr["IsFirstTime"] != null && dr["IsFirstTime"].ToString() != "" ? Convert.ToBoolean(dr["IsFirstTime"].ToString()) : false;
+                                objUserOtp.IsOrganizationAdmin = dr["isOrgAdmin"] != null && dr["isOrgAdmin"].ToString() != "" ? Convert.ToBoolean(dr["isOrgAdmin"].ToString()) : false;
                             }
 
                             break;
@@ -2059,7 +2141,7 @@ namespace RE.BusinesLogic
             return userNotification;
         }
 
-        public UserSignupOtp verifySignupWithOTP(InputUserSignupOtp users)
+        public async Task<UserSignupOtp> verifySignupWithOTP(InputUserSignupOtp users)
         {
             bool smsResult = false;
             UserSignupOtp objUserOtp = new UserSignupOtp();
@@ -2108,7 +2190,13 @@ namespace RE.BusinesLogic
                         // Sent OTP
                         string SMSContents = "";
                         SMSContents = otp + SMS_OTP_Message;
-                        smsResult = SMS_OTP_Stop ? true : objotpGen.SendSMS(users.Mobile, SMSContents, otp);
+
+                        Aisensy_SMS objWhatsappSMS = new Aisensy_SMS();
+
+                        //smsResult = SMS_OTP_Stop ? true : objotpGen.SendSMS(users.Mobile, SMSContents, otp);
+
+                        smsResult = SMS_OTP_Stop ? true : await objWhatsappSMS.SendWhatsApp(users.Mobile, otp, ConfigurationManager.AppSettings["SMS_aisensy_LoginOTPTemplet"], "");
+
                         if (smsResult)
                         {
                             OTPCls objOTP = new OTPCls();
@@ -2354,6 +2442,9 @@ namespace RE.BusinesLogic
                             objProj.RevirwTitle = dr["RevirwTitle"] != null ? dr["RevirwTitle"].ToString() : "";
                             objProj.ReviewDesc = dr["ReviewDesc"] != null ? dr["ReviewDesc"].ToString() : "";
                             objProj.Rating = Convert.ToInt32(dr["Rating"].ToString());
+                            objProj.UserEmail = dr["Email"] != null ? dr["Email"].ToString() : "";
+                            objProj.UserPhone = dr["Mobile"] != null ? dr["Mobile"].ToString() : ""; 
+                            objProj.UserName = dr["Name"] != null ? dr["Name"].ToString() : "";
 
                             string json = dr["Images"] != null ? dr["Images"].ToString() : "";
                             objProj.Images = JsonConvert.DeserializeObject<List<ProjectsReviewAttachments>>(json);
@@ -2725,8 +2816,8 @@ namespace RE.BusinesLogic
                             o.TANNumber = dr["TANNumber"]?.ToString();
                             o.ISO_Certification = dr["ISO_Certification"]?.ToString();
                             o.YearOfEstablishment = dr["YearOfEstablishment"] != DBNull.Value ? Convert.ToInt32(dr["YearOfEstablishment"]) : (int?)null;
-                            o.LogoUrl = dr["LogoUrl"]?.ToString();
-                            o.CoverImageUrl = dr["CoverImageUrl"]?.ToString();
+                            o.LogoUrl = !string.IsNullOrEmpty(dr["LogoUrl"].ToString()) ? RoutePath + "/Images/" + dr["LogoUrl"]?.ToString() : "";
+                            o.CoverImageUrl = !string.IsNullOrEmpty(dr["CoverImageUrl"].ToString()) ? RoutePath + "/Images/" + dr["CoverImageUrl"]?.ToString() : "";
                             o.IsActive = dr["IsActive"] != DBNull.Value && Convert.ToBoolean(dr["IsActive"]);
                             o.IsDeleted = dr["IsDeleted"] != DBNull.Value && Convert.ToBoolean(dr["IsDeleted"]);
                             organizations.Add(o);
@@ -2868,8 +2959,8 @@ namespace RE.BusinesLogic
 
 
                             objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
-                            objProj.OrgLogoUrl = dr["LogoUrl"] != null ? dr["LogoUrl"].ToString() : "";
-                            objProj.OrgCoverImageUrl = dr["CoverImageUrl"] != null ? dr["CoverImageUrl"].ToString() : "";
+                            objProj.OrgLogoUrl = !string.IsNullOrEmpty(dr["LogoUrl"].ToString()) ? RoutePath + "/Images/" + dr["LogoUrl"]?.ToString() : "";
+                            objProj.OrgCoverImageUrl = !string.IsNullOrEmpty(dr["CoverImageUrl"].ToString()) ? RoutePath + "/Images/" + dr["CoverImageUrl"]?.ToString() : "";
                             objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
                             objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
                             objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
@@ -2891,5 +2982,548 @@ namespace RE.BusinesLogic
             return objProjs;
         }
 
+        public bool UpdatePlotPrice(PlotPrice price)
+        {
+            bool isSuccess = false;
+            DataSet ds = new DataSet();
+
+            try
+            {
+                using (SqlConnection sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand cmd = new SqlCommand("usp_updatePlotPrice", sqlCon);
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    // Common parameters
+                    cmd.Parameters.AddWithValue("@ProjectID", price.ProjectID);
+                    cmd.Parameters.AddWithValue("@PlotID", price.PlotID);
+                    cmd.Parameters.AddWithValue("@updated_by", price.updated_by);
+                    cmd.Parameters.AddWithValue("@SQYDPrice", price.SQYDPrice);
+
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    da.Fill(ds);
+                    sqlCon.Close();
+
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            if (!string.IsNullOrWhiteSpace(dr["Message"].ToString()))
+                                isSuccess = true;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                isSuccess = false;
+            }
+
+            return isSuccess;
+        }
+
+        public string DeleteProjectPlots(ProjectDelete proj)
+        {
+            string responce = string.Empty;
+            try
+            {
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("sp_delete_project_Plots", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = proj.ProjectID;
+                    sql_cmnd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = proj.PlotID;
+                    sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = proj.UserID;
+                    sql_cmnd.ExecuteNonQuery();
+                    sqlCon.Close();
+                }
+                responce = "200";
+            }
+            catch (Exception Ex)
+            {
+                responce = "500";
+                sqlCon.Close();
+            }
+
+            return responce;
+        }
+
+
+        public List<LikedProjects> GetLikedProjectForUser(int userid)
+        {
+            List<LikedProjects> projects = new List<LikedProjects>();
+            var ds = new DataSet();
+            try
+            {
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("sp_GetLikedProjectForUser", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@userid", SqlDbType.Int).Value = userid;
+                    var adapter = new SqlDataAdapter(sql_cmnd);
+
+                    adapter.Fill(ds);
+                    sqlCon.Close();
+
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            LikedProjects objProj = new LikedProjects();
+
+                            objProj.AddressLine1 = dr["AddressLine1"] != null ? dr["AddressLine1"].ToString() : "";
+                            objProj.AddressLine2 = dr["AddressLine2"] != null ? dr["AddressLine2"].ToString() : "";
+                            objProj.City = dr["City"] != null ? dr["City"].ToString() : "";
+                            objProj.State = dr["State"] != null ? dr["State"].ToString() : "";
+                            objProj.Country = dr["Country"] != null ? dr["Country"].ToString() : "";
+                            objProj.PostalCode = dr["PostalCode"] != null ? dr["PostalCode"].ToString() : "";
+                            objProj.ProjectID = dr["ProjectID"] != null ? Convert.ToInt32(dr["ProjectID"].ToString()) : 0;
+                            objProj.UserID = dr["UserID"] != null ? Convert.ToInt32(dr["UserID"].ToString()) : 0;
+                            objProj.IsLiked = dr["IsLiked"] != DBNull.Value && Convert.ToBoolean(dr["IsLiked"]);
+                            objProj.ProjName = dr["ProjName"] != null ? dr["ProjName"].ToString() : "";
+                            objProj.ProjAddress = dr["ProjAddress"] != null ? dr["ProjAddress"].ToString() : "";
+                            objProj.ProjDistrict = dr["ProjDistrict"] != null ? dr["ProjDistrict"].ToString() : "";
+                            objProj.ProjState = dr["ProjState"] != null ? dr["ProjState"].ToString() : "";
+                            objProj.ProjPostalCode = dr["ProjPostalCode"] != null ? dr["ProjPostalCode"].ToString() : "";
+                            objProj.ProjLandmark = dr["ProjLandmark"] != null ? dr["ProjLandmark"].ToString() : "";
+                            objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
+                            objProj.ContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
+                            objProj.ContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
+                            objProj.ContactPhone = dr["ContactPhone"] != null ? dr["ContactPhone"].ToString() : "";
+
+                            projects.Add(objProj);
+                        }
+                    }
+                }
+            }
+            catch (Exception Ex)
+            {
+                sqlCon.Close();
+            }
+
+            return projects;
+        }
+        public string CURD_AssignOrganizationAdmin(orgAdmin org)
+        {
+            string responce = string.Empty;
+            try
+            {
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("sp_CURD_AssignOrganizationAdmin", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@Org_ID", SqlDbType.Int).Value = org.Org_ID;
+                    sql_cmnd.Parameters.AddWithValue("@User_ID", SqlDbType.Int).Value = org.User_ID;
+                    sql_cmnd.Parameters.AddWithValue("@CreatedBy", SqlDbType.Int).Value = org.CreatedBy;
+                    sql_cmnd.Parameters.AddWithValue("@Type", SqlDbType.Int).Value = org.Type;
+                    sql_cmnd.ExecuteNonQuery();
+                    sqlCon.Close();
+                }
+                responce = "200";
+            }
+            catch (Exception Ex)
+            {
+                responce = "500";
+                sqlCon.Close();
+            }
+
+            return responce;
+        }
+
+        public List<OrgsAdminsInfo> GetOrgsAdminsInfo(orgAdmin org)
+        {
+            List<OrgsAdminsInfo> organizations = new List<OrgsAdminsInfo>();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                using (SqlConnection sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand cmd = new SqlCommand("sp_GetOrgsAdminsInfo", sqlCon);
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@userid", SqlDbType.Int).Value = org.User_ID;
+                    cmd.Parameters.AddWithValue("@orgID", SqlDbType.Int).Value = org.Org_ID;
+
+
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    da.Fill(ds);
+                    sqlCon.Close();
+
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            OrgsAdminsInfo o = new OrgsAdminsInfo();
+                            o.OrgData = new Organization();
+                            o.OrgData.OrganizationId = dr["OrganizationId"] != DBNull.Value ? Convert.ToInt64(dr["OrganizationId"]) : 0;
+                            o.OrgData.OrganizationCode = dr["OrganizationCode"]?.ToString();
+                            o.OrgData.OrganizationName = dr["OrganizationName"]?.ToString();
+                            o.OrgData.OrganizationType = dr["OrganizationType"]?.ToString();
+                            o.OrgData.ContactPerson = dr["ContactPerson"]?.ToString();
+                            o.OrgData.ContactEmail = dr["ContactEmail"]?.ToString();
+                            o.OrgData.ContactPhone = dr["ContactPhone"]?.ToString();
+                            o.OrgData.AlternatePhone = dr["AlternatePhone"]?.ToString();
+                            o.OrgData.Website = dr["Website"]?.ToString();
+                            o.OrgData.AddressLine1 = dr["AddressLine1"]?.ToString();
+                            o.OrgData.AddressLine2 = dr["AddressLine2"]?.ToString();
+                            o.OrgData.City = dr["City"]?.ToString();
+                            o.OrgData.State = dr["State"]?.ToString();
+                            o.OrgData.Country = dr["Country"]?.ToString();
+                            o.OrgData.PostalCode = dr["PostalCode"]?.ToString();
+                            o.OrgData.RegistrationNumber = dr["RegistrationNumber"]?.ToString();
+                            o.OrgData.GSTNumber = dr["GSTNumber"]?.ToString();
+                            o.OrgData.PANNumber = dr["PANNumber"]?.ToString();
+                            o.OrgData.TANNumber = dr["TANNumber"]?.ToString();
+                            o.OrgData.ISO_Certification = dr["ISO_Certification"]?.ToString();
+                            o.OrgData.YearOfEstablishment = dr["YearOfEstablishment"] != DBNull.Value ? Convert.ToInt32(dr["YearOfEstablishment"]) : (int?)null;
+                            o.OrgData.LogoUrl = !string.IsNullOrEmpty(dr["LogoUrl"].ToString()) ? RoutePath + "/Images/" + dr["LogoUrl"]?.ToString() : "";
+                            o.OrgData.CoverImageUrl = !string.IsNullOrEmpty(dr["CoverImageUrl"].ToString()) ? RoutePath + "/Images/" + dr["CoverImageUrl"]?.ToString() : "";
+                            o.OrgData.IsActive = dr["IsActive"] != DBNull.Value && Convert.ToBoolean(dr["IsActive"]);
+                            o.OrgData.IsDeleted = dr["IsDeleted"] != DBNull.Value && Convert.ToBoolean(dr["IsDeleted"]);
+
+                            o.UserName = dr["UserName"]?.ToString();
+                            o.UserEmail = dr["UserEmail"]?.ToString();
+                            o.UserMobile = dr["UserMobile"]?.ToString();
+                            o.UserID = dr["UserID"] != DBNull.Value ? Convert.ToInt32(dr["UserID"]) : 0;
+
+
+                            organizations.Add(o);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
+            }
+
+            return organizations;
+        }
+
+
+        public List<Plots> GetUserAllPlots(orgAdmin org)
+        {
+            List<Plots> plots = new List<Plots>();
+            var ds = new DataSet();
+            try
+            {
+
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("sp_GetUserAllPlots", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@userid", SqlDbType.Int).Value = org.User_ID;
+                    var adapter = new SqlDataAdapter(sql_cmnd);
+
+                    adapter.Fill(ds);
+                    sqlCon.Close();
+
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            Plots objPlots = new Plots();
+                            objPlots.PlotID = dr["ID"] != null ? Convert.ToInt32(dr["ID"].ToString()) : 0;
+                            objPlots.PlotNo = dr["PlotNo"] != null ? dr["PlotNo"].ToString() : "";
+                            objPlots.Facings = dr["Facings"] != null ? dr["Facings"].ToString() : "";
+                            objPlots.PlotSize = dr["PlotSize"] != null ? dr["PlotSize"].ToString() : "";
+                            objPlots.ProjectID = dr["ProjectID"] != null ? Convert.ToInt32(dr["ProjectID"].ToString()) : 0;
+                            objPlots.UserID = dr["UserID"] != null ? Convert.ToInt32(dr["UserID"].ToString()) : 0;
+
+                            if (dr["PlotDocuments"] != null && dr["PlotDocuments"].ToString() != "")
+                                objPlots.PlotDocuments = JsonConvert.DeserializeObject<List<files>>(dr["PlotDocuments"] != null ? dr["PlotDocuments"].ToString() : "");
+
+                            if (dr["RoadsInfo"] != null && dr["RoadsInfo"].ToString() != "")
+                                objPlots.RoadsInfo = JsonConvert.DeserializeObject<DirectionFaces>(dr["RoadsInfo"] != null ? dr["RoadsInfo"].ToString() : "");
+
+                            string json = dr["GEOInfo"] != null ? dr["GEOInfo"].ToString() : "";
+                            objPlots.GEOInfo = JsonConvert.DeserializeObject<List<Geos>>(json);
+                            objPlots.IsSold = dr["isSold"] != null ? Convert.ToInt32(dr["isSold"].ToString()) : 0;
+
+
+                            objPlots.RoadNumber = dr["RoadNumber"] != null ? dr["RoadNumber"].ToString() : "";
+
+                            if (dr["Borders"] != null && dr["Borders"].ToString() != "")
+                                objPlots.Borders = JsonConvert.DeserializeObject<DirectionFaces>(dr["Borders"] != null ? dr["Borders"].ToString() : "");
+
+
+                            objPlots.IsApproved = false;
+                            if (dr["isApproved"] != null && dr["isApproved"].ToString() != "")
+                                objPlots.IsApproved = Convert.ToBoolean(dr["isApproved"]);
+
+                            objPlots.ProjName = dr["ProjName"] != null ? dr["ProjName"].ToString() : "";
+                            objPlots.ProjAddress = dr["ProjAddress"] != null ? dr["ProjAddress"].ToString() : "";
+                            objPlots.ProjDistrict = dr["ProjDistrict"] != null ? dr["ProjDistrict"].ToString() : "";
+                            objPlots.ProjState = dr["ProjState"] != null ? dr["ProjState"].ToString() : "";
+                            objPlots.ProjPostalCode = dr["ProjPostalCode"] != null ? dr["ProjPostalCode"].ToString() : "";
+                            objPlots.ProjLandmark = dr["ProjLandmark"] != null ? dr["ProjLandmark"].ToString() : "";
+
+                            objPlots.CoverPhotoTitle = dr["CoverPhotoTitle"] != null ? dr["CoverPhotoTitle"].ToString() : "";
+                            objPlots.CoverPhoto = !string.IsNullOrEmpty(dr["CoverPhoto"].ToString()) ? RoutePath + "/Images/" + dr["CoverPhoto"].ToString() : "";
+                            objPlots.CoverPhotoDecription = dr["CoverPhotoDecription"] != null ? dr["CoverPhotoDecription"].ToString() : "";
+                            objPlots.PhotoID = Convert.ToInt32(dr["PhotoID"].ToString());
+
+                            objPlots.PlotDecription = dr["PlotDecription"] != null ? dr["PlotDecription"].ToString() : "";
+
+                            if (dr["Boundaries"] != null && dr["Boundaries"].ToString() != "")
+                                objPlots.Boundaries = JsonConvert.DeserializeObject<DirectionFaces>(dr["Boundaries"] != null ? dr["Boundaries"].ToString() : "");
+
+
+                            if (objPlots.IsSold == 1)
+                            {
+                                // Sold
+                                objPlots.SoldUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
+                                objPlots.SoldUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
+                                objPlots.SoldUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
+                            }
+                            else if (objPlots.IsSold == 2)
+                            {
+                                // Reserved
+                                objPlots.ReservedUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
+                                objPlots.ReservedUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
+                                objPlots.ReservedUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
+                            }
+                            else if (objPlots.IsSold == 3)
+                            {
+                                // Resell
+                                objPlots.ResellUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
+                                objPlots.ResellUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
+                                objPlots.ResellUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
+                            }
+
+                            objPlots.SQYDPrice = dr["PlotPrice"] != null && dr["PlotPrice"].ToString() != "" ? Convert.ToDecimal(dr["PlotPrice"].ToString()) : 0;
+
+                            plots.Add(objPlots);
+                        }
+
+                    }
+                }
+            }
+            catch (Exception Ex)
+            {
+                sqlCon.Close();
+            }
+
+            return plots;
+        }
+
+
+        public List<PlotsHistory> GetPlotHistory(PlotsUnAssigned plot)
+        {
+            List<PlotsHistory> plots = new List<PlotsHistory>();
+            var ds = new DataSet();
+            try
+            {
+
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("sp_GetPlotHistory", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@projectID", SqlDbType.Int).Value = plot.ProjectID;
+                    sql_cmnd.Parameters.AddWithValue("@plotID", SqlDbType.Int).Value = plot.PlotID;
+                    var adapter = new SqlDataAdapter(sql_cmnd);
+
+                    adapter.Fill(ds);
+                    sqlCon.Close();
+
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            PlotsHistory objPlots = new PlotsHistory();
+                            objPlots.PlotID = dr["ID"] != null ? Convert.ToInt32(dr["ID"].ToString()) : 0;
+                            objPlots.Description = dr["Description"] != null ? dr["Description"].ToString() : "";
+                            objPlots.PlotNo = dr["PlotNo"] != null ? dr["PlotNo"].ToString() : "";
+                            objPlots.Facings = dr["Facings"] != null ? dr["Facings"].ToString() : "";
+                            objPlots.PlotSize = dr["PlotSize"] != null ? dr["PlotSize"].ToString() : "";
+                            objPlots.ProjectID = dr["ProjectID"] != null ? Convert.ToInt32(dr["ProjectID"].ToString()) : 0;
+                            objPlots.UserID = dr["UserID"] != null ? Convert.ToInt32(dr["UserID"].ToString()) : 0;
+
+                            if (dr["PlotDocuments"] != null && dr["PlotDocuments"].ToString() != "")
+                                objPlots.PlotDocuments = JsonConvert.DeserializeObject<List<files>>(dr["PlotDocuments"] != null ? dr["PlotDocuments"].ToString() : "");
+
+                            if (dr["RoadsInfo"] != null && dr["RoadsInfo"].ToString() != "")
+                                objPlots.RoadsInfo = JsonConvert.DeserializeObject<DirectionFaces>(dr["RoadsInfo"] != null ? dr["RoadsInfo"].ToString() : "");
+
+                            string json = dr["GEOInfo"] != null ? dr["GEOInfo"].ToString() : "";
+                            objPlots.GEOInfo = JsonConvert.DeserializeObject<List<Geos>>(json);
+                            objPlots.IsSold = dr["isSold"] != null ? Convert.ToInt32(dr["isSold"].ToString()) : 0;
+
+
+                            objPlots.RoadNumber = dr["RoadNumber"] != null ? dr["RoadNumber"].ToString() : "";
+
+                            if (dr["Borders"] != null && dr["Borders"].ToString() != "")
+                                objPlots.Borders = JsonConvert.DeserializeObject<DirectionFaces>(dr["Borders"] != null ? dr["Borders"].ToString() : "");
+
+                            objPlots.ProjName = dr["ProjName"] != null ? dr["ProjName"].ToString() : "";
+                            objPlots.ProjAddress = dr["ProjAddress"] != null ? dr["ProjAddress"].ToString() : "";
+                            objPlots.ProjDistrict = dr["ProjDistrict"] != null ? dr["ProjDistrict"].ToString() : "";
+                            objPlots.ProjState = dr["ProjState"] != null ? dr["ProjState"].ToString() : "";
+                            objPlots.ProjPostalCode = dr["ProjPostalCode"] != null ? dr["ProjPostalCode"].ToString() : "";
+                            objPlots.ProjLandmark = dr["ProjLandmark"] != null ? dr["ProjLandmark"].ToString() : "";
+
+
+                            objPlots.SQYDPrice = dr["PlotPrice"] != null && dr["PlotPrice"].ToString() != "" ? Convert.ToDecimal(dr["PlotPrice"].ToString()) : 0;
+
+                            plots.Add(objPlots);
+                        }
+
+                    }
+                }
+            }
+            catch (Exception Ex)
+            {
+                sqlCon.Close();
+            }
+
+            return plots;
+        }
+
+        public async Task<bool> New_userLoginFlow(newUserLoginFlow login)
+        {
+            bool isSuccess = false;
+            DataSet ds = new DataSet();
+            try
+            {
+                bool smsResult = false;
+                OTPGeneration objotpGen = new OTPGeneration();
+                string otp = SMS_OTP_Stop ? "000000" : objotpGen.Generate_otp();
+                string SMSContents = "";
+                SMSContents = otp + SMS_OTP_Message;
+                Aisensy_SMS objWhatsappSMS = new Aisensy_SMS();
+
+                //smsResult = SMS_OTP_Stop ? true : objotpGen.SendSMS(users.Mobile, SMSContents, otp);
+
+                smsResult = SMS_OTP_Stop ? true : await objWhatsappSMS.SendWhatsApp(login.Mobile, otp, ConfigurationManager.AppSettings["SMS_aisensy_LoginOTPTemplet"], "");
+
+                if (smsResult)
+                {
+                    using (SqlConnection sqlCon = new SqlConnection(SqlconString))
+                    {
+                        sqlCon.Open();
+                        SqlCommand cmd = new SqlCommand("sp_userLogin", sqlCon);
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        // Common parameters
+                        cmd.Parameters.AddWithValue("@mobile", login.Mobile);
+                        cmd.Parameters.AddWithValue("@role", login.Role);
+                        cmd.Parameters.AddWithValue("@Otp", otp);
+                        SqlDataAdapter da = new SqlDataAdapter(cmd);
+                        da.Fill(ds);
+                        sqlCon.Close();
+                        if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                        {
+                            isSuccess = true;
+                        }
+                    }
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                isSuccess = false;
+            }
+            return isSuccess;
+        }
+
+        public newUserLoginFlowResponce userLoginOTPVerification(newUserLoginFlow login)
+        {
+            newUserLoginFlowResponce response = new newUserLoginFlowResponce();
+            DataSet ds = new DataSet();
+            try
+            {
+                using (SqlConnection sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand cmd = new SqlCommand("sp_userLoginOTPValidate", sqlCon);
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    // Common parameters
+                    cmd.Parameters.AddWithValue("@mobile", login.Mobile);
+                    cmd.Parameters.AddWithValue("@Otp", login.otp);
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    da.Fill(ds);
+                    sqlCon.Close();
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            if(dr["Status"] != null && dr["Status"].ToString() == "1")
+                                response.StatusCode = 200;
+                            else
+                                response.StatusCode = 201;
+
+                            response.Message = dr["Message"] != null ? dr["Message"].ToString() : "";
+                        }
+
+                        if (response.StatusCode == 200 && ds.Tables.Count > 1 && ds.Tables[1].Rows.Count > 0)
+                        {
+                            foreach (DataRow dr in ds.Tables[1].Rows)
+                            {
+                                UserLoginFlowResponse response1 = new UserLoginFlowResponse();
+                                response1.UserID = dr["id"] != null ? Convert.ToInt32(dr["id"].ToString()) : 0;
+                                response1.isExistingUser = dr["isExistingUser"] != DBNull.Value && Convert.ToBoolean(dr["isExistingUser"]);
+                                response1.isOrgAdmin = dr["isOrgAdmin"] != DBNull.Value && Convert.ToBoolean(dr["isOrgAdmin"]);
+                                if (response1.isExistingUser)
+                                {
+                                    response1.userInfo = new userInfo();
+                                    response1.userInfo.email = dr["email"] != null ? dr["email"].ToString() : "";
+                                    response1.userInfo.name = dr["name"] != null ? dr["name"].ToString() : "";
+                                }
+                                response.data = response1;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                response = new newUserLoginFlowResponce();
+                response.StatusCode = 500;
+                response.Message = "Internal Server Error";
+                Console.WriteLine("Error: " + ex.Message);
+            }
+            return response;
+        }
+
+        public bool UpdateSignupUserInfo(newUserLoginFlow user)
+        {
+            bool isSuccess = false;
+            DataSet ds = new DataSet();
+            try
+            {
+                using (SqlConnection sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand cmd = new SqlCommand("sp_UpdateUserDetails", sqlCon);
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    // Common parameters
+                    cmd.Parameters.AddWithValue("@user_id", user.userId);
+                    cmd.Parameters.AddWithValue("@name", user.Name);
+                    cmd.Parameters.AddWithValue("@email", user.Email);
+                    cmd.Parameters.AddWithValue("@IdProofNo", "");
+                    cmd.Parameters.AddWithValue("@IdProofType", "");
+
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    da.Fill(ds);
+                    sqlCon.Close();
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        isSuccess = true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                isSuccess = false;
+            }
+            return isSuccess;
+        }
     }
 }

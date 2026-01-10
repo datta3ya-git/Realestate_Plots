@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 using System.Web.Http;
 
 namespace RE.Controllers
@@ -228,11 +229,11 @@ namespace RE.Controllers
 
         [Route("api/User/OtpAutenticatoionAndAuthorization")]
         [HttpPost]
-        public HttpResponseMessage OtpAutenticatoionAndAuthorization(InputUserOtp users)
+        public async Task<HttpResponseMessage> OtpAutenticatoionAndAuthorization(InputUserOtp users)
         {
             UsersOTPResponce res = new UsersOTPResponce();
             UserOtp objUserOtp = new UserOtp();
-            objUserOtp = dblogic.OtpAutenticatoionAndAuthorization(users);
+            objUserOtp = await dblogic.OtpAutenticatoionAndAuthorization(users);
             if (!string.IsNullOrWhiteSpace(objUserOtp.Mobile) && objUserOtp.Mobile == users.Mobile)
             {
                 res.StatusCode = 200;
@@ -249,11 +250,11 @@ namespace RE.Controllers
 
         [Route("api/User/verifySignupWithOTP")]
         [HttpPost]
-        public HttpResponseMessage verifySignupWithOTP(InputUserSignupOtp users)
+        public async Task<HttpResponseMessage> verifySignupWithOTP(InputUserSignupOtp users)
         {
             UsersSignupOTPResponce res = new UsersSignupOTPResponce();
             UserSignupOtp objUserOtp = new UserSignupOtp();
-            objUserOtp = dblogic.verifySignupWithOTP(users);
+            objUserOtp = await dblogic.verifySignupWithOTP(users);
             if (!string.IsNullOrWhiteSpace(objUserOtp.OTP))
             {
                 res.StatusCode = 200;
@@ -317,5 +318,54 @@ namespace RE.Controllers
             response.Content = new StringContent(jsonData, Encoding.UTF8, "application/json");
             return response;
         }
+
+
+        [Route("api/User/New_userLoginFlow")]
+        [HttpPost]
+        public async Task<HttpResponseMessage> New_userLoginFlow(newUserLoginFlow user)
+        {
+            ResponseCommon res = new ResponseCommon();
+            bool objUserOtp =await dblogic.New_userLoginFlow(user);
+            if (objUserOtp)
+            {
+                res.StatusCode = 200;
+                res.Message = "OTP Sent Successfully";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "OTP Sent Failed";
+            }
+            return jsonconvert(res);
+        }
+
+        [Route("api/User/New_User_OTP_Validation")]
+        [HttpPost]
+        public HttpResponseMessage userLoginOTPVerification(newUserLoginFlow login)
+        {
+            newUserLoginFlowResponce res = new newUserLoginFlowResponce();
+            res = dblogic.userLoginOTPVerification(login);
+            return jsonconvert(res);
+        }
+
+        [Route("api/User/New_user_Signup_Details_update")]
+        [HttpPost]
+        public HttpResponseMessage UpdateSignupUserInfo(newUserLoginFlow user)
+        {
+            ResponseCommon res = new ResponseCommon();
+            bool objUserOtp = dblogic.UpdateSignupUserInfo(user);
+            if (objUserOtp)
+            {
+                res.StatusCode = 200;
+                res.Message = "Registered successfully";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "Registration failed";
+            }
+            return jsonconvert(res);
+        }
     }
+
 }

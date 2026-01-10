@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Web;
 
 namespace RE.Models
@@ -77,6 +78,10 @@ namespace RE.Models
         public int LikedCount { get; set; }
         public bool isUserLiked { get; set; }
         public int Org_id { get; set; }
+
+        public List<ApproachRoads> ApprochRoads { get; set; }
+        public string MapAngle { get; set; }
+
     }
 
     public class ProjectsAttachments
@@ -114,6 +119,12 @@ namespace RE.Models
     {
         public string lag { get; set; }
         public string lat { get; set; }
+    }
+
+    public class ApproachRoads
+    {
+        public string RoadWidth { get; set; }
+        public List<Geos> RoadGEOInfo { get; set; }
     }
 
     public class files
@@ -174,7 +185,7 @@ namespace RE.Models
         public string Person2Mobile2 { get; set; }
         public string ProjectHighlights { get; set; }
 
-        public int ViewedCount  { get; set; }
+        public int ViewedCount { get; set; }
         public string OrganizationName { get; set; }
         public string OrgLogoUrl { get; set; }
         public string OrgCoverImageUrl { get; set; }
@@ -184,7 +195,7 @@ namespace RE.Models
         public string OrgContactPhone { get; set; }
         public string OrgWebsite { get; set; }
         public int LikedCount { get; set; }
-        public bool isUserLiked  { get; set; }
+        public bool isUserLiked { get; set; }
         public int Org_id { get; set; }
     }
 
@@ -279,5 +290,49 @@ namespace RE.Models
         public int StatusCode { get; set; }
         public string Message { get; set; }
         public List<Projects> Projects { get; set; }
+    }
+
+
+    public class ProjectDelete
+    {
+        public int ProjectID { get; set; }
+        public int PlotID { get; set; }
+        public int UserID { get; set; }
+    }
+
+
+    public class LikedProjects
+    {
+        public int ProjectID { get; set; }
+        public int UserID { get; set; }
+        public bool IsLiked { get; set; }
+        public string ProjName { get; set; }
+        public string ProjAddress { get; set; }
+        public string ProjDistrict { get; set; }
+        public string ProjState { get; set; }
+        public string ProjPostalCode { get; set; }
+        public string ProjLandmark { get; set; }
+        public string OrganizationName { get; set; }
+        public string ContactPerson { get; set; }
+        public string ContactEmail { get; set; }
+        public string ContactPhone { get; set; }
+
+        public string Website { get; set; }
+        public string AddressLine1 { get; set; }
+        public string AddressLine2 { get; set; }
+
+        public string City { get; set; }
+        public string State { get; set; }
+        public string Country { get; set; }
+        public string PostalCode { get; set; }
+
+    }
+
+    public class ProjectsLikedResponce
+    {
+        public int StatusCode { get; set; }
+        public string Message { get; set; }
+
+        public List<LikedProjects> Projects { get; set; }
     }
 }
