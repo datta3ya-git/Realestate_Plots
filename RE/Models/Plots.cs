@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Web;
 
 namespace RE.Models
@@ -33,6 +34,21 @@ namespace RE.Models
         public string CoverPhoto { get; set; }
         public string CoverPhotoDecription { get; set; }
         public int PhotoID { get; set; }
+        public string PlotDecription { get; set; }
+        public DirectionFaces Boundaries { get; set; }
+
+        public string SoldUserName { get; set; }
+        public string SoldUserEmail { get; set; }
+        public string SoldUserMobile { get; set; }
+        public string ReservedUserName { get; set; }
+        public string ReservedUserEmail { get; set; }
+        public string ReservedUserMobile { get; set; }
+        public string ResellUserName { get; set; }
+        public string ResellUserEmail { get; set; }
+        public string ResellUserMobile { get; set; }
+
+        public decimal SQYDPrice { get; set; }
+
     }
 
     public class PlotsResponce
@@ -90,5 +106,47 @@ namespace RE.Models
         public string Message { get; set; }
 
         public List<Agent> Agents { get; set; }
+    }
+
+    public class PlotPrice
+    {
+        public int ProjectID { get; set; }
+        public int PlotID { get; set; }
+        public decimal SQYDPrice { get; set; }
+        public int updated_by { get; set; }
+
+    }
+
+    public class PlotsHistory
+    {
+        public string Description { get; set; }
+        public int PlotID { get; set; }
+        public string PlotNo { get; set; }
+        public string Facings { get; set; }
+        public string PlotSize { get; set; }
+        public int ProjectID { get; set; }
+        public int UserID { get; set; }
+        public DirectionFaces RoadsInfo { get; set; }
+        public List<files> PlotDocuments { get; set; }
+        public List<Geos> GEOInfo { get; set; }
+        public int IsSold { get; set; }
+        public DirectionFaces Borders { get; set; }
+        public string RoadNumber { get; set; }
+        public string ProjName { get; set; }
+        public string ProjAddress { get; set; }
+        public string ProjDistrict { get; set; }
+        public string ProjState { get; set; }
+        public string ProjPostalCode { get; set; }
+        public string ProjLandmark { get; set; }
+        public decimal SQYDPrice { get; set; }
+
+    }
+
+    public class PlotsHistoryResponce
+    {
+        public int StatusCode { get; set; }
+        public string Message { get; set; }
+
+        public List<PlotsHistory> PlotsHistory { get; set; }
     }
 }

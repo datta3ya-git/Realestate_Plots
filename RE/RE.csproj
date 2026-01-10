@@ -355,16 +355,19 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\Agent.cs" />
+    <Compile Include="Models\Aisensy_SMS.cs" />
     <Compile Include="Models\Common.cs" />
     <Compile Include="Models\Coordinates.cs" />
     <Compile Include="Models\FCMNotification.cs" />
     <Compile Include="Models\FileUploadDetails.cs" />
     <Compile Include="Models\GetInTouch.cs" />
+    <Compile Include="Models\Organization.cs" />
     <Compile Include="Models\OTP.cs" />
     <Compile Include="Models\Plots.cs" />
     <Compile Include="Models\ProjectAmenities.cs" />
     <Compile Include="Models\ProjectReview.cs" />
     <Compile Include="Models\Projects.cs" />
+    <Compile Include="Models\Terms_Conditions.cs" />
     <Compile Include="Models\UserOtp.cs" />
     <Compile Include="Models\Users.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

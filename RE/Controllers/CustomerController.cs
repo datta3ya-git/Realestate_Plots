@@ -19,6 +19,40 @@ namespace RE.Controllers
     public class CustomerController : ApiController
     {
         DBLogic dblogic = new DBLogic();
+
+
+        [Route("api/Customer/GetProjectsListBasedOnRange")]
+        [HttpPost]
+        public HttpResponseMessage GetProjectsListBasedOnRange(Coordinates objCoord)
+        {
+            ProjectsResponce res = new ProjectsResponce();
+            List<ProjectsMini> proj = new List<ProjectsMini>();
+            proj = dblogic.GetProjectsListBasedOnRange(objCoord);
+            if (proj.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Projects Details based on the given Range";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "No Data Found";
+            }
+            res.Projects = proj;
+            return jsonconvert(res);
+        }
+
+
+        public HttpResponseMessage jsonconvert(object Values)
+        {
+            var response = this.Request.CreateResponse(HttpStatusCode.OK);
+            string jsonData = Newtonsoft.Json.JsonConvert.SerializeObject(Values);
+            response.Content = new StringContent(jsonData, Encoding.UTF8, "application/json");
+            return response;
+        }
+
+
+        /*
         [Route("api/Customer/AddProject")]
         [Route("api/Customer/UpdateProject")]
         [HttpPost]
@@ -330,13 +364,6 @@ namespace RE.Controllers
 
             return jsonconvert(res);
         }
-        public HttpResponseMessage jsonconvert(object Values)
-        {
-            var response = this.Request.CreateResponse(HttpStatusCode.OK);
-            string jsonData = Newtonsoft.Json.JsonConvert.SerializeObject(Values);
-            response.Content = new StringContent(jsonData, Encoding.UTF8, "application/json");
-            return response;
-        }
 
         [Route("api/Customer/LikeProject")]
         [HttpPost]
@@ -550,32 +577,7 @@ namespace RE.Controllers
             return jsonconvert(res);
         }
 
-        [Route("api/Customer/GetProjectsListBasedOnRange")]
-        [HttpPost]
-        public HttpResponseMessage GetProjectsListBasedOnRange(Coordinates objCoord)
-        {
-            ProjectsResponce res = new ProjectsResponce();
-            List<ProjectsMini> proj = new List<ProjectsMini>();
-            proj = dblogic.GetProjectsListBasedOnRange(objCoord);
-            if (proj.Count > 0)
-            {
-                res.StatusCode = 200;
-                res.Message = "Projects Details based on the given Range";
-            }
-            else
-            {
-                res.StatusCode = 204;
-                res.Message = "No Data Found";
-            }
-            res.Projects = proj;
-            return jsonconvert(res);
-        }
-
-
-
-
-
-
+        
         [Route("api/Customer/AddUser")]
         [Route("api/Customer/AddEndUser")]
         [HttpPost]
@@ -760,5 +762,6 @@ namespace RE.Controllers
             res.users = users;
             return jsonconvert(res);
         }
+        */
     }
 }

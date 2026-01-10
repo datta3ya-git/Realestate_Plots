@@ -1,24 +1,587 @@
-﻿<div class="jumbotron">
-    <h1>ASP.NET</h1>
-    <p class="lead">ASP.NET is a free web framework for building great Web sites and Web applications using HTML, CSS, and JavaScript.</p>
-    <p><a href="https://asp.net" class="btn btn-primary btn-lg">Learn more &raquo;</a></p>
-</div>
-<div class="row">
-    <div class="col-md-4">
-        <h2>Getting started</h2>
-        <p>ASP.NET Web API is a framework that makes it easy to build HTTP services that reach
-        a broad range of clients, including browsers and mobile devices. ASP.NET Web API
-        is an ideal platform for building RESTful applications on the .NET Framework.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301870">Learn more &raquo;</a></p>
-    </div>
-    <div class="col-md-4">
-        <h2>Get more libraries</h2>
-        <p>NuGet is a free Visual Studio extension that makes it easy to add, remove, and update libraries and tools in Visual Studio projects.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301871">Learn more &raquo;</a></p>
-    </div>
-    <div class="col-md-4">
-        <h2>Web Hosting</h2>
-        <p>You can easily find a web hosting company that offers the right mix of features and price for your applications.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301872">Learn more &raquo;</a></p>
-    </div>
-</div>
+﻿<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Plotz — Book Your Plot</title>
+    <meta name="description"
+          content="Plotz — book residential & commercial plots via our mobile app. Fast, secure, and transparent." />
+
+    <!-- Bootstrap CSS (via CDN) + optional integrity attributes -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          crossorigin="anonymous">
+
+    <style>
+        /* -------------------------
+       Custom design tokens (over Bootstrap)
+       ------------------------- */
+        :root {
+            --accent: #06b6d4;
+            /* primary accent */
+            --muted: #6b7280;
+            /* secondary text */
+            --radius: 12px;
+            --maxw: 1100px;
+            font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+        }
+
+        /* Global page background switched to white as requested */
+        body {
+            background: #ffffff;
+            color: #0b1220
+        }
+
+        a {
+            color: var(--accent)
+        }
+
+        /* Constrain content width similar to before */
+        .container {
+            max-width: var(--maxw)
+        }
+
+        /* Card visual which complements Bootstrap cards */
+        .app-card {
+            border-radius: var(--radius);
+            box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
+            padding: 20px;
+            background: #fff
+        }
+
+        /* Hero left column text spacing */
+        .hero-title {
+            font-size: 30px;
+            font-weight: 700;
+            margin-bottom: 8px
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        /* Booking form small tweaks */
+        .booking .form-control {
+            border-radius: 10px
+        }
+
+        .btn-accent {
+            background: linear-gradient(90deg, var(--accent), #7c3aed);
+            color: #fff;
+            border: 0
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid #eef2f7;
+            padding: 20px 0;
+            margin-top: 24px;
+            color: var(--muted)
+        }
+
+        /* Small responsive adjustments */
+        @*@media (max-width:900px) {
+            .hero-title {
+                font-size: 22px
+            }
+        }*@
+
+        /* Make carousel images responsive and rounded */
+        .carousel-img {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            border-radius: 12px
+        }
+
+        /* Small helpers for legal text when shown inside webview */
+        .legal {
+            max-height: 70vh;
+            overflow: auto;
+            padding-right: 8px
+        }
+
+        /* Accessibility: focus outlines for keyboard users */
+        a:focus,
+        button:focus,
+        input:focus {
+            outline: 3px solid rgba(6, 182, 212, 0.18);
+            outline-offset: 2px
+        }
+    </style>
+
+    <style>
+        /* Footer dark-blue color similar to your screenshot */
+        .site-footer {
+            background: #044b70;
+            /* deep blue */
+            color: #ffffff;
+        }
+
+        .site-footer a {
+            color: rgba(255, 255, 255, 0.92);
+            text-decoration: none;
+        }
+
+        .site-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Footer columns spacing */
+        .site-footer .footer-col {
+            padding: 36px 16px;
+        }
+
+        /* Thin divider line above sub-footer */
+        .site-footer .sub-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 18px 0;
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        /* Make footer headings match screenshot (bolder + slightly larger) */
+        .site-footer h5 {
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 18px;
+        }
+
+        /* Footer quick links list spacing */
+        .site-footer .quick-links li {
+            margin: 10px 0;
+            list-style: none;
+        }
+
+        /* Footer icons (small) - you can replace with SVGs or font icons later */
+        .icon-placeholder {
+            display: inline-block;
+            width: 18px;
+            text-align: center;
+            margin-right: 8px;
+            opacity: 0.95;
+        }
+
+        /* About & Purpose section styling */
+        .home-intro {
+            padding: 48px 0;
+            background: #ffffff;
+            /* keep page background white */
+            color: #0b1220;
+        }
+
+        .home-intro .lead {
+            color: #374151;
+            max-width: 900px;
+        }
+
+        /* Responsive adjustments */
+        @*@media (max-width: 767px) {
+            .site-footer .footer-col {
+                padding: 24px 12px;
+            }
+        }*@
+    </style>
+</head>
+
+<body>
+
+    <!-- Header will be injected here -->
+    <!-- <div id="site-header"></div> -->
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <div style="width:44px;height:44px;border-radius:10px;
+                  background:linear-gradient(135deg,#06b6d4,#7c3aed);
+                  display:flex;align-items:center;justify-content:center;
+                  color:#001;font-weight:800;margin-right:10px;">PL</div>
+                <div>
+                    <div style="font-weight:800">Plotly</div>
+                    <small class="text-muted">Book plots via mobile app</small>
+                </div>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
+                    aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navMain">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/pages/about_us.html">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/pages/contact_us.html">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/pages/terms_conditions.html">Terms</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/pages/privacy_policy.html">Privacy</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container my-4">
+
+
+        <!-- HOME PAGE SLIDER STARTS HERE -->
+        <section id="home" class="mt-2">
+
+            <div id="homeSlider" class="carousel slide" data-bs-ride="carousel">
+
+                <!-- Indicators -->
+                <div class="carousel-indicators">
+                    <button type="button" data-bs-target="#homeSlider" data-bs-slide-to="0" class="active"></button>
+                    <button type="button" data-bs-target="#homeSlider" data-bs-slide-to="1"></button>
+                    <button type="button" data-bs-target="#homeSlider" data-bs-slide-to="2"></button>
+                </div>
+
+                <!-- Slides -->
+                <div class="carousel-inner">
+
+                    <!-- Slide 1 -->
+                    <div class="carousel-item active">
+                        <img src="https://as2.ftcdn.net/jpg/12/54/82/53/1000_F_1254825350_cuwdeyBooLljueJpv6PCneihWzKWMR4Y.jpg"
+                             class="d-block w-100" style="height:420px; object-fit:cover;">
+                        <div class="carousel-caption text-start mb-4">
+                            <h3 class="fw-bold">Trusted Legal Support</h3>
+                            <p>Secure payments & title verification assistance.</p>
+                        </div>
+                    </div>
+
+                    <!-- Slide 2 -->
+                    <div class="carousel-item">
+                        <img src="https://t4.ftcdn.net/jpg/01/00/19/67/240_F_100196732_XuyUwDI5CveLiDfzBmYLji3avBLLztfM.jpg"
+                             class="d-block w-100" style="height:420px; object-fit:cover;">
+                        <div class="carousel-caption text-start mb-4">
+                            <h3 class="fw-bold">Book Instantly</h3>
+                            <p>Reserve a plot directly from the mobile app.</p>
+                        </div>
+                    </div>
+
+                    <!-- Slide 3 -->
+                    <div class="carousel-item">
+                        <img src="https://t3.ftcdn.net/jpg/06/23/53/38/240_F_623533870_s0sx1EbmApWPENXrGzHVFZfFom7ffqh1.jpg"
+                             class="d-block w-100" style="height:420px; object-fit:cover;">
+                        <div class="carousel-caption text-start mb-4">
+                            <h3 class="fw-bold">Prime Verified Plots</h3>
+                            <p>Handpicked properties with clear documentation.</p>
+                        </div>
+                    </div>
+
+
+                </div>
+
+                <!-- Controls -->
+                <button class="carousel-control-prev" type="button" data-bs-target="#homeSlider" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#homeSlider" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                </button>
+
+            </div>
+        </section>
+
+        <!-- ============================
+        Expanded About / Problems → Solutions section
+        Paste this below your slider on the Home page
+        ============================ -->
+        <section class="container my-5">
+
+            <!-- Main heading -->
+            <div class="text-center mb-4">
+                <h2>About Plotz — What we solve & why it matters</h2>
+                <p class="lead text-muted mx-auto" style="max-width:900px">
+                    The traditional land-buying process is slow, opaque and travel-heavy. Plotz brings transparency,
+                    trust and convenience
+                    to land discovery — all from your phone.
+                </p>
+            </div>
+
+            <!-- Problems / Solutions two-column grid -->
+            <div class="row g-4 align-items-start">
+
+                <!-- Problems column -->
+                <div class="col-lg-6">
+                    <div class="card p-4 h-100">
+                        <h4 class="mb-3">Problems buyers face today</h4>
+
+                        <ul class="mb-0" style="line-height:1.9;">
+                            <li>
+                                <strong>Opaque listings & hidden middlemen</strong> — buyers often find that a listing
+                                has multiple agents or intermediaries who inflate prices or hide charges.
+                            </li>
+                            <li>
+                                <strong>Uncertain availability</strong> — you don't reliably know whether a plot is
+                                already reserved or sold until you visit or call.
+                            </li>
+                            <li>
+                                <strong>Time-consuming site visits</strong> — inspecting multiple projects in-person
+                                takes days and is costly.
+                            </li>
+                            <li>
+                                <strong>Scattered documentation</strong> — ownership records, approvals and title docs
+                                are often fragmented and hard to verify quickly.
+                            </li>
+                            <li>
+                                <strong>Limited media & context</strong> — buyers rarely get high-quality photos, layout
+                                plans, or neighborhood context before visiting.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Solutions column -->
+                <div class="col-lg-6">
+                    <div class="card p-4 h-100">
+                        <h4 class="mb-3">How Plotz solves them</h4>
+
+                        <ul class="mb-0" style="line-height:1.9;">
+                            <li>
+                                <strong>No mediators by default</strong> — our platform surfaces verified seller
+                                listings directly; interactions and offers are visible in-app so intermediaries cannot
+                                secretly control listings.
+                            </li>
+                            <li>
+                                <strong>Real-time booking visibility</strong> — every plot shows its reservation/sale
+                                status so you know instantly whether it is available.
+                            </li>
+                            <li>
+                                <strong>Venture & plot view on maps</strong> — view the entire venture on Google Maps
+                                (satellite & street context), plus the exact plot boundaries and plot IDs on the map
+                                itself.
+                            </li>
+                            <li>
+                                <strong>Complete plot details in one place</strong> — gallery images, site plans,
+                                specifications, amenities, price breakdowns and developer disclosures live on the
+                                listing.
+                            </li>
+                            <li>
+                                <strong>Documentation hub</strong> — upload and view title docs, approvals and
+                                verification results associated with a listing to reduce surprises later.
+                            </li>
+                            <li>
+                                <strong>Mobile-first booking flow</strong> — reserve or request a site visit from your
+                                phone; follow up with digital document exchange and payment options.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature highlights (three-column) -->
+            <div class="row g-3 mt-4">
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <h5>Transparent deals</h5>
+                        <p class="text-muted mb-0">
+                            See seller details, listing history and any commissions or extra fees
+                            upfront — transparency by design.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <h5>Interactive map view</h5>
+                        <p class="text-muted mb-0">
+                            Plot overlays on Google Maps let you explore the venture layout,
+                            access roads, proximity to landmarks and neighborhood context.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <h5>Complete listing pages</h5>
+                        <p class="text-muted mb-0">
+                            Each listing includes gallery, amenities list, downloadable
+                            documents, price schedule and contact/history so decisions can be made remotely.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- How it works (step-by-step) -->
+            <div class="row g-4 mt-4 align-items-start">
+                <div class="col-lg-6">
+                    <h4>How Plotz works — quick walkthrough</h4>
+                    <ol style="line-height:1.9;">
+                        <li>
+                            <strong>Discover:</strong> Browse curated ventures or search by city and filters (budget,
+                            plot size, amenities).
+                        </li>
+                        <li>
+                            <strong>Inspect remotely:</strong> Open the listing to view high-resolution photos, site
+                            plans and the plotted boundary on the map. Check documents attached to the listing.
+                        </li>
+                        <li>
+                            <strong>Verify availability:</strong> Real-time status shows whether a plot is available,
+                            reserved or sold — no guesswork.
+                        </li>
+                        <li>
+                            <strong>Reserve or request visit:</strong> Reserve a plot instantly via the app or request
+                            an in-person visit. Reservation creates a timestamped record and notifies the seller.
+                        </li>
+                        <li>
+                            <strong>Complete paperwork online:</strong> Exchange documents, request verification help
+                            and coordinate payments with trusted partners — much of the interaction can happen
+                            digitally.
+                        </li>
+                    </ol>
+                </div>
+
+                <div class="col-lg-6">
+                    <h4>Benefits for buyers and sellers</h4>
+                    <ul style="line-height:1.9;">
+                        <li>
+                            <strong>Buyers:</strong> Save time, compare options side-by-side, and decide with confidence
+                            using verified materials.
+                        </li>
+                        <li>
+                            <strong>Sellers/developers:</strong> Get organized leads, reduce speculative site visits,
+                            and present every plot professionally to serious buyers.
+                        </li>
+                        <li>
+                            <strong>Market-wide:</strong> Reduce inefficiencies, lower transaction costs and improve
+                            trust across projects.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Closing statement / CTA -->
+            <div class="text-center mt-4">
+                <p class="mb-3"><strong>Ready to explore plots the smarter way?</strong></p>
+                <a href="#book" class="btn btn-primary">Start browsing</a>
+            </div>
+        </section>
+
+
+        <!-- Footer will be injected here -->
+        <!-- <div id="site-footer"></div> -->
+        <!-- footer.html -->
+        <footer class="site-footer mt-5" role="contentinfo" aria-label="Site footer"
+                style="background:#044b70;color:#fff;">
+            <div class="container py-4">
+                <div class="row">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <h5 style="font-weight:700;color:#fff">About Site</h5>
+                        <p style="color: rgba(255,255,255,0.85);line-height:1.6;">
+                            Plotly simplifies land discovery and reservation. We provide a curated selection of plots,
+                            support document verification,
+                            and connect buyers with trusted local partners for smoother transactions.
+                        </p>
+                        <p><a href="/pages/about_us.html" style="color: rgba(255,255,255,0.92);">Read more ▸</a></p>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <h5 style="font-weight:700;color:#fff">Contact Us</h5>
+                        <ul style="list-style:none;padding:0;line-height:1.9;color:rgba(255,255,255,0.95);">
+                            <li>📍 #3-11-456, Near Kamineni Hospitals, Opp: Big Bazar, L.B.Nagar</li>
+                            <li>📞 040 - 6464 6813</li>
+                            <li>
+                                ✉️ <a href="mailto:info@plotly.example"
+                                      style="color:rgba(255,255,255,0.95);">info@plotly.example</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <h5 style="font-weight:700;color:#fff">Quick Links</h5>
+                        <ul style="list-style:none;padding:0;">
+                            <li><a href="/pages/about_us.html" style="color:rgba(255,255,255,0.92);">About Plotly</a></li>
+                            @*<li><a href="/pages/faq.html" style="color:rgba(255,255,255,0.92);">FAQ</a></li>*@
+                            <li><a href="/pages/contact_us.html" style="color:rgba(255,255,255,0.92);">Contact</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <h5 style="font-weight:700;color:#fff">Explore</h5>
+                        <ul style="list-style:none;padding:0;">
+                            <li><a href="/pages/terms_conditions.html" style="color:rgba(255,255,255,0.92);">Terms and Conditions</a></li>
+                            <li><a href="/pages/privacy_policy.html" style="color:rgba(255,255,255,0.92);">Privacy Policy</a></li>
+                        </ul>
+
+                        <div style="margin-top:20px;">
+                            <h6 style="color: rgba(255,255,255,0.95);">Follow us</h6>
+                            <a href="#" aria-label="Facebook"
+                               style="margin-right:10px;color:rgba(255,255,255,0.95);">🔵</a>
+                            <a href="#" aria-label="Instagram"
+                               style="margin-right:10px;color:rgba(255,255,255,0.95);">🟣</a>
+                            <a href="#" aria-label="LinkedIn" style="color:rgba(255,255,255,0.95);">🔗</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3" style="border-top:1px solid rgba(255,255,255,0.06);padding-top:14px;">
+                    <div class="col-md-4 text-start">
+                        <small>Plotly — All rights reserved</small>
+                    </div>
+                    <div class="col-md-4 text-center d-none d-md-block">
+                        <a href="/pages/terms_conditions.html" style="color: rgba(255,255,255,0.95);">Terms and Conditions</a>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <small>Built for mobile-first real-estate bookings</small>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- include the snippet loader (place it after placeholders) -->
+    <script src="include-snippets.js"></script>
+
+    <!-- Bootstrap JS bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+            crossorigin="anonymous"></script>
+
+    <script>
+        /* -------------------------
+           Client-side behaviour (kept simple and commented)
+           ------------------------- */
+
+        // Smooth scroll to hash targets on initial load
+        window.addEventListener('load', () => {
+            if (location.hash) {
+                const el = document.querySelector(location.hash);
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+
+        // Contact form mock handler — replace with fetch() to your backend when ready
+        const contactForm = document.getElementById('contactForm');
+        if (contactForm) {
+            contactForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const name = document.getElementById('cname').value.trim();
+                const email = document.getElementById('cemail').value.trim();
+                const msg = document.getElementById('cmsg').value.trim();
+                if (!name || !email || !msg) {
+                    document.getElementById('contactMsg').innerHTML = '<div class="text-danger">Please complete the form.</div>';
+                    return;
+                }
+                document.getElementById('contactMsg').innerHTML = '<div class="text-success">Thanks — we received your message and will respond soon.</div>';
+                this.reset();
+            });
+        }
+
+        // Booking form mock handler
+        const bookingForm = document.getElementById('bookingForm');
+        if (bookingForm) {
+            bookingForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const name = document.getElementById('name').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                if (!name || !phone) {
+                    document.getElementById('bookingMsg').innerHTML = '<div class="text-danger">Please fill required fields.</div>';
+                    return;
+                }
+                document.getElementById('bookingMsg').innerHTML = '<div class="text-success">Reservation requested. Our team will contact you within 1 business day.</div>';
+                this.reset();
+            });
+        }
+
+    </script>
+</body>
+
+</html>

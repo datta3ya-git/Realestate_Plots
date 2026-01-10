@@ -265,7 +265,7 @@ namespace RE.Controllers
                 else
                 {
                     img.Message = "File Not Exists.";
-                }              
+                }
 
                 img.ImageName = objProjectFileName.FileName;
                 img.StatusCode = 200;
@@ -281,6 +281,8 @@ namespace RE.Controllers
 
 
         [Route("api/Project/PlotSold")]
+        [Route("api/Project/PlotReserve")]
+        [Route("api/Project/PlotResell")]
         [HttpPost]
         public HttpResponseMessage PlotSold(Plots Plot)
         {
@@ -290,7 +292,43 @@ namespace RE.Controllers
             if (responce == "200")
             {
                 res.StatusCode = 200;
-                res.Message = "Plot Sold Successfully";
+                if (Plot.IsSold == 1)
+                    res.Message = "Plot Sold Successfully";
+                else if (Plot.IsSold == 2)
+                    res.Message = "Plot Reserved Successfully";
+                else if (Plot.IsSold == 3)
+                    res.Message = "Plot Reselled Successfully";
+                else
+                    res.Message = "";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/CancelPlotSold")]
+        [Route("api/Project/CancelPlotReserve")]
+        [Route("api/Project/CancelPlotResell")]
+        [HttpPost]
+        public HttpResponseMessage CancelPlotSold(Plots Plot)
+        {
+            ProjectStaticResponce res = new ProjectStaticResponce();
+
+            string responce = dblogic.CancelPlotSold(Plot);
+            if (responce == "200")
+            {
+                res.StatusCode = 200;
+                if (Plot.IsSold == 1)
+                    res.Message = "Plot Sold Cancelled";
+                else if (Plot.IsSold == 2)
+                    res.Message = "Plot Reserved Cancelled";
+                else if (Plot.IsSold == 3)
+                    res.Message = "Plot Resealed Cancelled";
+                else
+                    res.Message = "";
             }
             else
             {
@@ -376,20 +414,20 @@ namespace RE.Controllers
             return response;
         }
 
-        [Route("api/Project/LikeProject")]
+        [Route("api/Project/BookmarkProject")]
         [HttpPost]
-        public HttpResponseMessage LikeProject(LikeProjects Proj)
+        public HttpResponseMessage SaveBookmarkProjects(LikeProjects Proj)
         {
             ProjectStaticResponce res = new ProjectStaticResponce();
-            string responce = dblogic.SaveLikeProjects(Proj);
+            string responce = dblogic.SaveBookmarkProjects(Proj);
 
             if (responce == "200")
             {
                 res.StatusCode = 200;
                 if (Proj.isLiked)
-                    res.Message = "Project liked Successfully";
+                    res.Message = "Project bookmarked Successfully";
                 else
-                    res.Message = "Project un-liked Successfully";
+                    res.Message = "Project un-bookmarked Successfully";
             }
             else
             {
@@ -400,17 +438,17 @@ namespace RE.Controllers
             return jsonconvert(res);
         }
 
-        [Route("api/Project/GetLikedProjects")]
+        [Route("api/Project/GetBookmarkProjects")]
         [HttpPost]
-        public HttpResponseMessage GetLikedProjects(LikeProjects project)
+        public HttpResponseMessage GetBookmarkProjects(LikeProjects project)
         {
             ProjectsResponce res = new ProjectsResponce();
             List<ProjectsMini> proj = new List<ProjectsMini>();
-            proj = dblogic.GetLikedProject(project);
+            proj = dblogic.GetBookmarkProjects(project);
             if (proj.Count > 0)
             {
                 res.StatusCode = 200;
-                res.Message = "Liked Project Details";
+                res.Message = "Bookmark Project Details";
             }
             else
             {
@@ -654,7 +692,7 @@ namespace RE.Controllers
             return jsonconvert(res);
         }
 
-
+        #region reviews
         [Route("api/Project/saveRevirewImages")]
         [HttpPost]
         public async Task<HttpResponseMessage> saveRevirewImages()
@@ -731,7 +769,7 @@ namespace RE.Controllers
             string responce = dblogic.InsertProjectReview(project);
             if (responce == "200")
             {
-                res.StatusCode = 200; 
+                res.StatusCode = 200;
                 res.Message = "Project review Added Successfully";
                 if (project.PRID != null && project.PRID > 0)
                 {
@@ -756,7 +794,7 @@ namespace RE.Controllers
             if (responce == "200")
             {
                 res.StatusCode = 200;
-                res.Message = "Project review deleted Successfully";               
+                res.Message = "Project review deleted Successfully";
             }
             else
             {
@@ -787,6 +825,8 @@ namespace RE.Controllers
             return jsonconvert(res);
         }
 
+        #endregion
+
         [Route("api/Project/UnassignedPlots")]
         [HttpPost]
         public HttpResponseMessage UnassignedPlots(PlotsUnAssigned Plot)
@@ -807,6 +847,7 @@ namespace RE.Controllers
             return jsonconvert(res);
         }
 
+        #region Get In Touch
         [Route("api/Project/AddGetInTouchDetails")]
         [HttpPost]
         public HttpResponseMessage InsertGetInTouchDetails(GetInTouch git)
@@ -865,6 +906,367 @@ namespace RE.Controllers
                 res.Message = "No Data Found";
             }
             res.GetInTouch = GetInTouch;
+            return jsonconvert(res);
+        }
+
+        #endregion
+
+        #region Terms & Conditions
+        [Route("api/Project/addTermsAndConditions")]
+        [HttpPost]
+        public HttpResponseMessage AddTermsAndConditions(Terms_Conditions tc)
+        {
+            Terms_ConditionsResponce res = new Terms_ConditionsResponce();
+            Terms_ConditionsInfo Terms_Conditions = new Terms_ConditionsInfo();
+            Terms_Conditions = dblogic.AddTermsAndConditions(tc);
+            if (Terms_Conditions.NewTermsId > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Terms & Conditions Details";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "No Data Found";
+            }
+            res.Terms_Conditions = Terms_Conditions;
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/recordUserTermsApproval")]
+        [HttpPost]
+        public HttpResponseMessage RecordUserTermsApproval(Terms_Conditions tc)
+        {
+            Terms_ConditionsResponceAccept res = new Terms_ConditionsResponceAccept();
+            bool responce = dblogic.RecordUserTermsApproval(tc);
+            if (responce)
+            {
+                res.IsAccepted = true;
+                res.StatusCode = 200;
+                res.Message = "Terms & Conditions Added Successfully";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/checkUserTermsStatus")]
+        [HttpPost]
+        public HttpResponseMessage CheckUserTermsStatus(Terms_Conditions tc)
+        {
+            Terms_ConditionsResponceAccept res = new Terms_ConditionsResponceAccept();
+            bool responce = dblogic.CheckUserTermsStatus(tc);
+
+            res.StatusCode = 200;
+            res.Message = "Terms & Conditions check";
+            res.IsAccepted = responce;
+            return jsonconvert(res);
+        }
+
+        #endregion
+
+
+        [Route("api/Project/GetProjectsMostViewedBasedOnRange")]
+        [HttpPost]
+        public HttpResponseMessage GetProjectsMostViewedBasedOnRange(Coordinates objCoord)
+        {
+            ProjectsResponce res = new ProjectsResponce();
+            List<ProjectsMini> proj = new List<ProjectsMini>();
+            proj = dblogic.GetProjectsListBasedOnRange(objCoord, true);
+            if (proj.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "MostViewed Projects Details based on the given Range";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "No Data Found";
+            }
+            res.Projects = proj;
+            return jsonconvert(res);
+        }
+
+
+        [Route("api/Project/LikeProject")]
+        [HttpPost]
+        public HttpResponseMessage LikeProject(LikeProjects Proj)
+        {
+            ProjectStaticResponce res = new ProjectStaticResponce();
+            string responce = dblogic.LikeProject(Proj);
+
+            if (responce == "200")
+            {
+                res.StatusCode = 200;
+                if (Proj.isLiked)
+                    res.Message = "Project Liked Successfully";
+                else
+                    res.Message = "Project un-Like Successfully";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
+
+            return jsonconvert(res);
+        }
+
+        #region Organization
+        [Route("api/Project/AddOrganization")]
+        [HttpPost]
+        public HttpResponseMessage AddOrganization(Organization organization)
+        {
+            OrganizationStaticResponse res = new OrganizationStaticResponse();
+
+            res.Organization = dblogic.ManageOrganization(organization, "INSERT");
+
+            if (res.Organization.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Organization Added Successfully";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
+
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/UpdateOrganization")]
+        [HttpPost]
+        public HttpResponseMessage UpdateOrganization(Organization organization)
+        {
+            OrganizationStaticResponse res = new OrganizationStaticResponse();
+
+            res.Organization = dblogic.ManageOrganization(organization, "UPDATE");
+
+            if (res.Organization.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Organization Updated Successfully";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
+
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/GetOrganizations")]
+        [HttpPost]
+        public HttpResponseMessage GetOrganizations(Organization organization)
+        {
+            OrganizationStaticResponse res = new OrganizationStaticResponse();
+
+            res.Organization = dblogic.ManageOrganization(organization, "GET");
+            if (res.Organization.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Organizations Data";
+            }
+            else
+            {
+                res.StatusCode = 404;
+                res.Message = "No Data found";
+            }
+
+            return jsonconvert(res);
+        }
+
+
+        [Route("api/Project/GetProjectbyOrgID")]
+        [HttpPost]
+        public HttpResponseMessage GetProjectbyOrgID(Projects proj)
+        {
+            OrgProjectResponce res = new OrgProjectResponce();
+
+            res.Projects = dblogic.GetProjectbyOrgID(proj);
+            if (res.Projects.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Projects Data";
+            }
+            else
+            {
+                res.StatusCode = 404;
+                res.Message = "No Data found";
+            }
+
+            return jsonconvert(res);
+        }
+        #endregion
+
+
+        [Route("api/Project/UpdatePlotPrice")]
+        [HttpPost]
+        public HttpResponseMessage UpdatePlotPrice(PlotPrice price)
+        {
+            bool isSuccess = false;
+
+            isSuccess = dblogic.UpdatePlotPrice(price);
+
+            if (isSuccess)
+            {
+                return jsonconvert(new { StatusCode = 200, Message = "Plot Price Updated" });
+            }
+            else
+            {
+                return jsonconvert(new { StatusCode = 500, Message = "Internal Server Error" });
+            }
+        }
+
+        [Route("api/Project/DeleteProjectPlots")]
+        [HttpPost]
+        public HttpResponseMessage DeleteProjectPlots(ProjectDelete proj)
+        {
+            ProjectStaticResponce res = new ProjectStaticResponce();
+
+            string responce = dblogic.DeleteProjectPlots(proj);
+            if (responce == "200")
+            {
+                res.StatusCode = 200;
+                if (proj.PlotID == 0)
+                    res.Message = "Project and Plots Deleted successfully.";
+                else if (proj.PlotID == 1)
+                    res.Message = "Plots Deleted successfully.";
+                else
+                    res.Message = "";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/GetUserLikedProjects")]
+        [HttpPost]
+        public HttpResponseMessage GetLikedProjectForUser(Users user)
+        {
+            ProjectsLikedResponce res = new ProjectsLikedResponce();
+            List<LikedProjects> proj = new List<LikedProjects>();
+            proj = dblogic.GetLikedProjectForUser(user.UserID);
+            if (proj.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Liked Projects Details";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "No Data Found";
+            }
+            res.Projects = proj;
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/AssignOrganizationAdmin")]
+        [HttpPost]
+        public HttpResponseMessage AssignOrganizationAdmin(orgAdmin org)
+        {
+            ProjectStaticResponce res = new ProjectStaticResponce();
+            org.Type = "ADD";
+            string responce = dblogic.CURD_AssignOrganizationAdmin(org);
+            if (responce == "200")
+            {
+                res.StatusCode = 200;
+                res.Message = "Org Admin assigned Successfully";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/UnAssignOrganizationAdmin")]
+        [HttpPost]
+        public HttpResponseMessage UnAssignOrganizationAdmin(orgAdmin org)
+        {
+            ProjectStaticResponce res = new ProjectStaticResponce();
+            org.Type = "DELETE";
+            string responce = dblogic.CURD_AssignOrganizationAdmin(org);
+            if (responce == "200")
+            {
+                res.StatusCode = 200;
+                res.Message = "Org Admin unassigned Successfully";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/GetAdminByOrg")]
+        [Route("api/Project/GetOrgByAdmins")]
+        [HttpPost]
+        public HttpResponseMessage GetOrganizationAdmins(orgAdmin org)
+        {
+            OrgsAdminsInfoResponse res = new OrgsAdminsInfoResponse();
+            res.Organization = dblogic.GetOrgsAdminsInfo(org);
+            if (res.Organization.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Organization Admins Details";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "No Data Found";
+            }
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/GetUserAllPlots")]
+        [HttpPost]
+        public HttpResponseMessage GetUserAllPlots(orgAdmin org)
+        {
+            PlotsResponce res = new PlotsResponce();
+            List<Plots> plot = new List<Plots>();
+            plot = dblogic.GetUserAllPlots(org);
+            if (plot.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Plots Details";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "No Data Found";
+            }
+            res.Plots = plot;
+            return jsonconvert(res);
+        }
+        [Route("api/Project/GetPlotHistory")]
+        [HttpPost]
+        public HttpResponseMessage GetPlotHistory(PlotsUnAssigned plot)
+        {
+            PlotsHistoryResponce res = new PlotsHistoryResponce();
+            List<PlotsHistory> plots = new List<PlotsHistory>();
+            plots = dblogic.GetPlotHistory(plot);
+            if (plots.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Plot History Details";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "No Data Found";
+            }
+            res.PlotsHistory = plots;
             return jsonconvert(res);
         }
     }

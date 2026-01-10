@@ -15,6 +15,10 @@ namespace RE.Models
         public string ReviewDesc { get; set; }
         public List<ProjectsReviewAttachments> Images { get; set; }
         public DateTime Date { get; set; }
+
+        public string UserName { get; set; }
+        public string UserEmail { get; set; }
+        public string UserPhone { get; set; }
     }
 
 
