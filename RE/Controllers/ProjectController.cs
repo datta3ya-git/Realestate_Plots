@@ -129,7 +129,7 @@ namespace RE.Controllers
             return jsonconvert(res);
         }
 
-        [Route("api/Project/AssignProjects")]
+        //[Route("api/Project/AssignProjects")]
         [Route("api/Project/AssignPlots")]
         [HttpPost]
         public HttpResponseMessage AssignProjectsandPlots(ProjectAssign proj)
@@ -1267,6 +1267,83 @@ namespace RE.Controllers
                 res.Message = "No Data Found";
             }
             res.PlotsHistory = plots;
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/GetProjectStats")]
+        [HttpPost]
+        public HttpResponseMessage GetProjectStats(ProjectDelete project)
+        {
+            ProjectStatsResponce res = new ProjectStatsResponce();
+            res.ProjectStats = dblogic.GetProjectStats(project);
+            if (res.ProjectStats != null)
+            {
+                res.StatusCode = 200;
+                res.Message = "Project Stats Details";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "No Data Found";
+            }
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/AssignProjectsToUsers")]
+        [HttpPost]
+        public HttpResponseMessage AssignProjectsToUsers(assignProjectsToUsers userProject)
+        {
+            ProjectStaticResponce res = new ProjectStaticResponce();
+            bool responce = dblogic.AssignAndUnAssignProjectsToUsers(userProject, "assigned");
+            if (responce)
+            {
+                res.StatusCode = 200;
+                res.Message = "Projects assigned to user Successfully";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
+            return jsonconvert(res);
+        }
+        [Route("api/Project/UnAssignProjectsToUsers")]
+        [HttpPost]
+        public HttpResponseMessage UnAssignProjectsToUsers(assignProjectsToUsers userProject)
+        {
+            ProjectStaticResponce res = new ProjectStaticResponce();
+            bool responce = dblogic.AssignAndUnAssignProjectsToUsers(userProject, "unassigned");
+            if (responce)
+            {
+                res.StatusCode = 200;
+                res.Message = "Projects unassigned to user Successfully";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/GetProjectsbyAgentID")]
+        [HttpPost]
+        public HttpResponseMessage GetProjectsbyAgentID(ProjectDelete project)
+        {
+            ProjectsResponce res = new ProjectsResponce();
+            List<ProjectsMini> proj = new List<ProjectsMini>();
+            proj = dblogic.GetProjectsbyAgentID(project);
+            if (proj.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Project Details";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "No Data Found";
+            }
+            res.Projects = proj;
             return jsonconvert(res);
         }
     }

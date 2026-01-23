@@ -49,6 +49,8 @@ namespace RE.Models
 
         public decimal SQYDPrice { get; set; }
 
+        public string PlotLength { get; set; }
+
     }
 
     public class PlotsResponce
