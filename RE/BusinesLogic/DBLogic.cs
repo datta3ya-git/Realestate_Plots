@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using RE.Enums;
 using RE.Models;
 using System;
 using System.Collections.Generic;
@@ -13,145 +14,381 @@ namespace RE.BusinesLogic
 {
     public class DBLogic
     {
+        // Constants
+        private const string STATUS_SUCCESS = "200";
+        private const string STATUS_ERROR = "500";
+        private const string EMPTY_STRING = "";
         SqlConnection sqlCon = null;
-        String SqlconString = ConfigurationManager.ConnectionStrings["REentity"].ConnectionString;
-        string RoutePath = ConfigurationManager.AppSettings["RoutePath"];
-        string SMS_OTP_Message = ConfigurationManager.AppSettings["SMS_OTP_Message"];
-        bool SMS_OTP_Stop = Convert.ToBoolean(ConfigurationManager.AppSettings["SMS_OTP_Stop"]);
-        public string AddUsers(Users user)
+
+        // Configuration fields
+        private readonly string SqlconString = ConfigurationManager.ConnectionStrings["REentity"].ConnectionString;
+        private readonly string RoutePath = ConfigurationManager.AppSettings["RoutePath"];
+        private readonly string SMS_OTP_Message = ConfigurationManager.AppSettings["SMS_OTP_Message"];
+        private readonly bool SMS_OTP_Stop = Convert.ToBoolean(ConfigurationManager.AppSettings["SMS_OTP_Stop"]);
+
+        #region Helper Methods
+
+        /// <summary>
+        /// Gets string value from DataRow with null safety
+        /// </summary>
+        private string GetStringValue(DataRow dr, string columnName, string defaultValue = "")
         {
-            string responce = string.Empty;
+            if (dr == null || dr[columnName] == null || dr[columnName] == DBNull.Value)
+                return defaultValue;
+            return dr[columnName].ToString();
+        }
+
+        /// <summary>
+        /// Gets integer value from DataRow with null safety
+        /// </summary>
+        private int GetIntValue(DataRow dr, string columnName, int defaultValue = 0)
+        {
+            if (dr == null || dr[columnName] == null || dr[columnName] == DBNull.Value || string.IsNullOrWhiteSpace(dr[columnName].ToString()))
+                return defaultValue;
+            return Convert.ToInt32(dr[columnName]);
+        }
+
+        /// <summary>
+        /// Gets boolean value from DataRow with null safety
+        /// </summary>
+        private bool GetBoolValue(DataRow dr, string columnName, bool defaultValue = false)
+        {
+            if (dr == null || dr[columnName] == null || dr[columnName] == DBNull.Value)
+                return defaultValue;
+            return Convert.ToBoolean(dr[columnName]);
+        }
+
+        /// <summary>
+        /// Gets decimal value from DataRow with null safety
+        /// </summary>
+        private decimal GetDecimalValue(DataRow dr, string columnName, decimal defaultValue = 0)
+        {
+            if (dr == null || dr[columnName] == null || dr[columnName] == DBNull.Value || string.IsNullOrWhiteSpace(dr[columnName].ToString()))
+                return defaultValue;
+            return Convert.ToDecimal(dr[columnName]);
+        }
+
+        /// <summary>
+        /// Gets DateTime value from DataRow with null safety
+        /// </summary>
+        private DateTime GetDateTimeValue(DataRow dr, string columnName, DateTime? defaultValue = null)
+        {
+            if (dr == null || dr[columnName] == null || dr[columnName] == DBNull.Value || string.IsNullOrWhiteSpace(dr[columnName].ToString()))
+                return defaultValue ?? DateTime.Now;
+            return Convert.ToDateTime(dr[columnName]);
+        }
+
+        /// <summary>
+        /// Builds image URL from filename
+        /// </summary>
+        private string BuildImageUrl(string fileName, string subFolder = "Images")
+        {
+            return string.IsNullOrWhiteSpace(fileName) ? EMPTY_STRING : $"{RoutePath}/{subFolder}/{fileName}";
+        }
+
+        /// <summary>
+        /// Deserializes JSON from DataRow column
+        /// </summary>
+        private T DeserializeJson<T>(DataRow dr, string columnName) where T : class
+        {
+            string json = GetStringValue(dr, columnName);
+            if (string.IsNullOrWhiteSpace(json))
+                return null;
             try
             {
-                using (sqlCon = new SqlConnection(SqlconString))
+                return JsonConvert.DeserializeObject<T>(json);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Safely converts value to string, returning empty string if null
+        /// </summary>
+        private string SafeString(object value)
+        {
+            return value == null ? EMPTY_STRING : value.ToString();
+        }
+
+        /// <summary>
+        /// Executes stored procedure and returns status
+        /// </summary>
+        private string ExecuteStoredProcedure(string procedureName, Action<SqlCommand> parameterSetup)
+        {
+            try
+            {
+                using (var sqlCon = new SqlConnection(SqlconString))
                 {
                     sqlCon.Open();
-                    SqlCommand sql_cmnd = new SqlCommand("sp_User", sqlCon);
-                    sql_cmnd.CommandType = CommandType.StoredProcedure;
-                    sql_cmnd.Parameters.AddWithValue("@Name", SqlDbType.VarChar).Value = user.Name;
-                    sql_cmnd.Parameters.AddWithValue("@Email", SqlDbType.VarChar).Value = user.Email;
-                    sql_cmnd.Parameters.AddWithValue("@Mobile", SqlDbType.VarChar).Value = user.Mobile;
-                    sql_cmnd.Parameters.AddWithValue("@Password", SqlDbType.VarChar).Value = user.Password;
-                    sql_cmnd.Parameters.AddWithValue("@Role", SqlDbType.Int).Value = user.Role;
-                    sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.VarChar).Value = user.ProjectID == null ? "" : user.ProjectID;
-                    sql_cmnd.Parameters.AddWithValue("@Type", SqlDbType.Int).Value = (int)Enums.Enums.ActionTypes.Add;
-                    sql_cmnd.Parameters.AddWithValue("@IdProofNo", SqlDbType.VarChar).Value = user.IdProofNo == null ? "" : user.IdProofNo;
-                    sql_cmnd.Parameters.AddWithValue("@IdProofType", SqlDbType.VarChar).Value = user.IdProofType == null ? "" : user.IdProofType;
-                    sql_cmnd.Parameters.AddWithValue("@IsPaid", SqlDbType.VarChar).Value = user.IsPaid;
-                    sql_cmnd.ExecuteNonQuery();
-                    sqlCon.Close();
+                    using (var sql_cmnd = new SqlCommand(procedureName, sqlCon))
+                    {
+                        sql_cmnd.CommandType = CommandType.StoredProcedure;
+                        parameterSetup?.Invoke(sql_cmnd);
+                        sql_cmnd.ExecuteNonQuery();
+                    }
                 }
-                responce = "200";
+                return STATUS_SUCCESS;
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", procedureName, ex.ToString());
+                return STATUS_ERROR;
+            }
+        }
+
+        /// <summary>
+        /// Executes stored procedure and returns DataSet
+        /// </summary>
+        private DataSet ExecuteStoredProcedureQuery(string procedureName, Action<SqlCommand> parameterSetup)
+        {
+            var ds = new DataSet();
+            try
+            {
+                using (var sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    using (var sql_cmnd = new SqlCommand(procedureName, sqlCon))
+                    {
+                        sql_cmnd.CommandType = CommandType.StoredProcedure;
+                        parameterSetup?.Invoke(sql_cmnd);
+                        var adapter = new SqlDataAdapter(sql_cmnd);
+                        adapter.Fill(ds);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ExceptionLogs("DBLogic", procedureName, ex.ToString());
+            }
+            return ds;
+        }
+
+        /// <summary>
+        /// Maps DataRow to ProjectsMini object
+        /// </summary>
+        private ProjectsMini MapDataRowToProjectsMini(DataRow dr)
+        {
+            if (dr == null) return null;
+
+            ProjectsMini objProj = new ProjectsMini();
+            objProj.Name = GetStringValue(dr, "Name");
+            objProj.Address = GetStringValue(dr, "Address");
+            objProj.District = GetStringValue(dr, "District");
+            objProj.State = GetStringValue(dr, "State");
+            objProj.PostalCode = GetStringValue(dr, "PostalCode");
+            objProj.Landmark = GetStringValue(dr, "Landmark");
+            objProj.Photos = DeserializeJson<List<files>>(dr, "Photos");
+            objProj.Phase = GetStringValue(dr, "Phase");
+            objProj.Blocks = GetStringValue(dr, "Blocks");
+            objProj.Faces = DeserializeJson<DirectionFaces>(dr, "Faces");
+            objProj.RoadNumber = GetStringValue(dr, "RoadNumber");
+            objProj.Borders = DeserializeJson<DirectionFaces>(dr, "Borders");
+            objProj.ProjectID = GetIntValue(dr, "Id");
+            objProj.ventureLocation = DeserializeJson<Geos>(dr, "ventureLocation");
+            objProj.CoverPhotoTitle = GetStringValue(dr, "CoverPhotoTitle");
+            objProj.CoverPhoto = BuildImageUrl(GetStringValue(dr, "CoverPhoto"));
+            objProj.CoverPhotoDecription = GetStringValue(dr, "CoverPhotoDecription");
+            objProj.CoverPhotoName = GetStringValue(dr, "CoverPhoto");
+            objProj.PhotoID = GetIntValue(dr, "PhotoID");
+            objProj.BrochurePhotoTitle = GetStringValue(dr, "BrochurePhotoTitle");
+            objProj.BrochurePhoto = BuildImageUrl(GetStringValue(dr, "BrochurePhoto"));
+            objProj.BrochurePhotoDecription = GetStringValue(dr, "BrochurePhotoDecription");
+            objProj.BrochurePhotoName = GetStringValue(dr, "BrochurePhoto");
+            objProj.LogoPhotoTitle = GetStringValue(dr, "LogoPhotoTitle");
+            objProj.LogoPhoto = BuildImageUrl(GetStringValue(dr, "LogoPhoto"));
+            objProj.LogoPhotoDecription = GetStringValue(dr, "LogoPhotoDecription");
+            objProj.LogoPhotoName = GetStringValue(dr, "LogoPhoto");
+            objProj.AuthoritiesInfo = GetStringValue(dr, "AuthoritiesInfo");
+            objProj.sqydPrice = DeserializeJson<SqydPrice>(dr, "SQYDPrice");
+            objProj.ContactPerson1 = GetStringValue(dr, "ContactPerson1");
+            objProj.ContactPerson2 = GetStringValue(dr, "ConctactPerson2");
+            objProj.Person1Mobile1 = GetStringValue(dr, "Person1Mobile1");
+            objProj.Person1Mobile2 = GetStringValue(dr, "Person1Mobile2");
+            objProj.Person2Mobile1 = GetStringValue(dr, "Person2Mobile1");
+            objProj.Person2Mobile2 = GetStringValue(dr, "Person2Mobile2");
+            objProj.ProjectHighlights = GetStringValue(dr, "ProjectHighlights");
+            objProj.ViewedCount = GetIntValue(dr, "ViewedCount");
+            objProj.LikedCount = GetIntValue(dr, "LikedCount");
+            objProj.isUserLiked = GetBoolValue(dr, "isUserLiked");
+            objProj.OrganizationName = GetStringValue(dr, "OrganizationName");
+            objProj.OrgLogoUrl = BuildImageUrl(GetStringValue(dr, "LogoUrl"));
+            objProj.OrgCoverImageUrl = BuildImageUrl(GetStringValue(dr, "CoverImageUrl"));
+            objProj.YearOfEstablishment = GetStringValue(dr, "YearOfEstablishment");
+            objProj.OrgContactPerson = GetStringValue(dr, "ContactPerson");
+            objProj.OrgContactEmail = GetStringValue(dr, "ContactEmail");
+            objProj.OrgContactPhone = GetStringValue(dr, "ContactPhone");
+            objProj.OrgWebsite = GetStringValue(dr, "Website");
+            objProj.Org_id = GetIntValue(dr, "OrganizationId");
+            return objProj;
+        }
+
+        /// <summary>
+        /// Maps DataRow to Users object
+        /// </summary>
+        private Users MapDataRowToUsers(DataRow dr)
+        {
+            if (dr == null) return null;
+
+            Users objusers = new Users();
+            objusers.Name = GetStringValue(dr, "Name");
+            objusers.Email = GetStringValue(dr, "Email");
+            objusers.Mobile = GetStringValue(dr, "Mobile");
+            objusers.Role = GetIntValue(dr, "RoleID", 1);
+            objusers.UserID = GetIntValue(dr, "Id", 1);
+            objusers.PIN = GetStringValue(dr, "PIN");
+            return objusers;
+        }
+
+        /// <summary>
+        /// Maps DataRow to Plots object
+        /// </summary>
+        private Plots MapDataRowToPlots(DataRow dr)
+        {
+            if (dr == null) return null;
+
+            Plots objPlots = new Plots();
+            objPlots.PlotID = GetIntValue(dr, "ID");
+            objPlots.PlotNo = GetStringValue(dr, "PlotNo");
+            objPlots.Facings = GetStringValue(dr, "Facings");
+            objPlots.PlotSize = GetStringValue(dr, "PlotSize");
+            objPlots.ProjectID = GetIntValue(dr, "ProjectID");
+            objPlots.UserID = GetIntValue(dr, "UserID");
+            objPlots.PlotDocuments = DeserializeJson<List<files>>(dr, "PlotDocuments");
+            objPlots.RoadsInfo = DeserializeJson<DirectionFaces>(dr, "RoadsInfo");
+            objPlots.GEOInfo = DeserializeJson<List<Geos>>(dr, "GEOInfo");
+            objPlots.IsSold = GetIntValue(dr, "isSold");
+            objPlots.RoadNumber = GetStringValue(dr, "RoadNumber");
+            objPlots.Borders = DeserializeJson<DirectionFaces>(dr, "Borders");
+            objPlots.IsApproved = GetBoolValue(dr, "isApproved");
+            objPlots.ProjName = GetStringValue(dr, "ProjName");
+            objPlots.ProjAddress = GetStringValue(dr, "ProjAddress");
+            objPlots.ProjDistrict = GetStringValue(dr, "ProjDistrict");
+            objPlots.ProjState = GetStringValue(dr, "ProjState");
+            objPlots.ProjPostalCode = GetStringValue(dr, "ProjPostalCode");
+            objPlots.ProjLandmark = GetStringValue(dr, "ProjLandmark");
+            objPlots.CoverPhotoTitle = GetStringValue(dr, "CoverPhotoTitle");
+            objPlots.CoverPhoto = BuildImageUrl(GetStringValue(dr, "CoverPhoto"));
+            objPlots.CoverPhotoDecription = GetStringValue(dr, "CoverPhotoDecription");
+            objPlots.PhotoID = GetIntValue(dr, "PhotoID");
+            objPlots.PlotDecription = GetStringValue(dr, "PlotDecription");
+            objPlots.Boundaries = DeserializeJson<DirectionFaces>(dr, "Boundaries");
+            objPlots.SQYDPrice = GetDecimalValue(dr, "PlotPrice");
+            objPlots.PlotLength = GetStringValue(dr, "PlotLength");
+
+            // Handle sold/reserved/resell user info
+            if (objPlots.IsSold == 1)
+            {
+                objPlots.SoldUserEmail = GetStringValue(dr, "UserEmail");
+                objPlots.SoldUserName = GetStringValue(dr, "UserName");
+                objPlots.SoldUserMobile = GetStringValue(dr, "UserMobile");
+            }
+            else if (objPlots.IsSold == 2)
+            {
+                objPlots.ReservedUserEmail = GetStringValue(dr, "UserEmail");
+                objPlots.ReservedUserName = GetStringValue(dr, "UserName");
+                objPlots.ReservedUserMobile = GetStringValue(dr, "UserMobile");
+            }
+            else if (objPlots.IsSold == 3)
+            {
+                objPlots.ResellUserEmail = GetStringValue(dr, "UserEmail");
+                objPlots.ResellUserName = GetStringValue(dr, "UserName");
+                objPlots.ResellUserMobile = GetStringValue(dr, "UserMobile");
             }
 
-            return responce;
+            return objPlots;
+        }
+
+        #endregion
+        public string AddUsers(Users user)
+        {
+            return ExecuteStoredProcedure("sp_User", (cmd) =>
+            {
+                cmd.Parameters.AddWithValue("@Name", SqlDbType.VarChar).Value = SafeString(user.Name);
+                cmd.Parameters.AddWithValue("@Email", SqlDbType.VarChar).Value = SafeString(user.Email);
+                cmd.Parameters.AddWithValue("@Mobile", SqlDbType.VarChar).Value = SafeString(user.Mobile);
+                cmd.Parameters.AddWithValue("@Password", SqlDbType.VarChar).Value = SafeString(user.Password);
+                cmd.Parameters.AddWithValue("@Role", SqlDbType.Int).Value = user.Role;
+                cmd.Parameters.AddWithValue("@ProjectID", SqlDbType.VarChar).Value = SafeString(user.ProjectID);
+                cmd.Parameters.AddWithValue("@Type", SqlDbType.Int).Value = (int)Enums.Enums.ActionTypes.Add;
+                cmd.Parameters.AddWithValue("@IdProofNo", SqlDbType.VarChar).Value = SafeString(user.IdProofNo);
+                cmd.Parameters.AddWithValue("@IdProofType", SqlDbType.VarChar).Value = SafeString(user.IdProofType);
+                cmd.Parameters.AddWithValue("@IsPaid", SqlDbType.VarChar).Value = user.IsPaid;
+            });
         }
 
         public string DeactivateUser(Users user)
         {
-            string responce = string.Empty;
-            try
+            return ExecuteStoredProcedure("sp_DeactivateUser", (cmd) =>
             {
-                using (sqlCon = new SqlConnection(SqlconString))
-                {
-                    sqlCon.Open();
-                    SqlCommand sql_cmnd = new SqlCommand("sp_DeactivateUser", sqlCon);
-                    sql_cmnd.CommandType = CommandType.StoredProcedure;
-
-                    sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = user.UserID;
-                    sql_cmnd.ExecuteNonQuery();
-                    sqlCon.Close();
-                }
-                responce = "200";
-            }
-            catch (Exception Ex)
-            {
-                responce = "500";
-                sqlCon.Close();
-            }
-
-            return responce;
+                cmd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = user.UserID;
+            });
         }
         public string AddProjects(Projects project)
         {
-            string responce = string.Empty;
             try
             {
-                string Geoinfo = "";
-                Geoinfo = JsonConvert.SerializeObject(project.GEOInfo);
-                using (sqlCon = new SqlConnection(SqlconString))
+                string geoInfo = JsonConvert.SerializeObject(project.GEOInfo);
+                string response = ExecuteStoredProcedure("sp_Project", (cmd) =>
                 {
-                    sqlCon.Open();
-                    SqlCommand sql_cmnd = new SqlCommand("sp_Project", sqlCon);
-                    sql_cmnd.CommandType = CommandType.StoredProcedure;
-                    sql_cmnd.Parameters.AddWithValue("@Name", SqlDbType.VarChar).Value = project.Name == null ? "" : project.Name;
-                    sql_cmnd.Parameters.AddWithValue("@Address", SqlDbType.VarChar).Value = project.Address == null ? "" : project.Address;
-                    sql_cmnd.Parameters.AddWithValue("@District", SqlDbType.VarChar).Value = project.District == null ? "" : project.District;
-                    sql_cmnd.Parameters.AddWithValue("@State", SqlDbType.VarChar).Value = project.State == null ? "" : project.State;
-                    sql_cmnd.Parameters.AddWithValue("@PostalCode", SqlDbType.VarChar).Value = project.PostalCode == null ? "" : project.PostalCode;
-                    sql_cmnd.Parameters.AddWithValue("@Landmark", SqlDbType.VarChar).Value = project.Landmark == null ? "" : project.Landmark;
-                    sql_cmnd.Parameters.AddWithValue("@ContactPerson1", SqlDbType.VarChar).Value = project.ContactPerson1 == null ? "" : project.ContactPerson1;
-                    sql_cmnd.Parameters.AddWithValue("@ConctactPerson2", SqlDbType.VarChar).Value = project.ContactPerson2 == null ? "" : project.ContactPerson2;
-                    sql_cmnd.Parameters.AddWithValue("@Person1Mobile1", SqlDbType.VarChar).Value = project.Person1Mobile1 == null ? "" : project.Person1Mobile1;
-                    sql_cmnd.Parameters.AddWithValue("@Person1Mobile2", SqlDbType.VarChar).Value = project.Person1Mobile2 == null ? "" : project.Person1Mobile2;
-                    sql_cmnd.Parameters.AddWithValue("@Person2Mobile1", SqlDbType.VarChar).Value = project.Person2Mobile1 == null ? "" : project.Person2Mobile1;
-                    sql_cmnd.Parameters.AddWithValue("@Person2Mobile2", SqlDbType.VarChar).Value = project.Person2Mobile2 == null ? "" : project.Person2Mobile2;
-                    sql_cmnd.Parameters.AddWithValue("@Emails", SqlDbType.VarChar).Value = project.Emails == null ? "" : project.Emails;
-                    sql_cmnd.Parameters.AddWithValue("@Description", SqlDbType.VarChar).Value = project.Description == null ? "" : project.Description;
-                    sql_cmnd.Parameters.AddWithValue("@Photos", SqlDbType.VarChar).Value = JsonConvert.SerializeObject(project.Photos);
-                    sql_cmnd.Parameters.AddWithValue("@Documents", SqlDbType.VarChar).Value = JsonConvert.SerializeObject(project.Documents);
-                    sql_cmnd.Parameters.AddWithValue("@Brocher", SqlDbType.VarChar).Value = JsonConvert.SerializeObject(project.Brocher);
-                    sql_cmnd.Parameters.AddWithValue("@GEOInfo", SqlDbType.VarChar).Value = Geoinfo;
-                    sql_cmnd.Parameters.AddWithValue("@Amenities", SqlDbType.VarChar).Value = project.Amenities == null ? "" : project.Amenities;
-                    sql_cmnd.Parameters.AddWithValue("@Phase", SqlDbType.VarChar).Value = project.Phase == null ? "" : project.Phase;
-                    sql_cmnd.Parameters.AddWithValue("@Blocks", SqlDbType.VarChar).Value = project.Blocks == null ? "" : project.Blocks;
-                    sql_cmnd.Parameters.AddWithValue("@Faces", SqlDbType.VarChar).Value = JsonConvert.SerializeObject(project.Faces);
-                    sql_cmnd.Parameters.AddWithValue("@Naksha", SqlDbType.VarChar).Value = project.Naksha == null ? "" : project.Naksha;
-                    sql_cmnd.Parameters.AddWithValue("@RoadsInfo", SqlDbType.VarChar).Value = project.RoadsInfo == null ? "" : project.RoadsInfo;
-                    sql_cmnd.Parameters.AddWithValue("@NearByFeatures", SqlDbType.VarChar).Value = project.NearByFeatures == null ? "" : project.NearByFeatures;
-                    sql_cmnd.Parameters.AddWithValue("@Directions", SqlDbType.VarChar).Value = project.Directions == null ? "" : project.Directions;
-                    sql_cmnd.Parameters.AddWithValue("@Disclamier", SqlDbType.VarChar).Value = project.Disclamier == null ? "" : project.Disclamier;
-                    sql_cmnd.Parameters.AddWithValue("@TotalArea", SqlDbType.VarChar).Value = project.TotalArea == null ? "" : project.TotalArea;
-                    sql_cmnd.Parameters.AddWithValue("@Type", SqlDbType.VarChar).Value = project.Type == null ? "" : project.Type;
-                    sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.VarChar).Value = project.UserID == 0 ? 1 : project.UserID;
-                    sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.VarChar).Value = project.ProjectID;
-                    sql_cmnd.Parameters.AddWithValue("@Borders", SqlDbType.VarChar).Value = project.Borders == null ? "" : JsonConvert.SerializeObject(project.Borders);
-                    sql_cmnd.Parameters.AddWithValue("@RoadNumber", SqlDbType.VarChar).Value = project.RoadNumber == null || project.RoadNumber == "" ? "" : project.RoadNumber;
-                    sql_cmnd.Parameters.AddWithValue("@ModeType", SqlDbType.Int).Value = project.ProjectID == 0 ? (int)Enums.Enums.ActionTypes.Add : (int)Enums.Enums.ActionTypes.Modify;
-                    sql_cmnd.Parameters.AddWithValue("@ventureLocation", SqlDbType.VarChar).Value = JsonConvert.SerializeObject(project.ventureLocation);
-                    sql_cmnd.Parameters.AddWithValue("@SurveyNumber", SqlDbType.VarChar).Value = project.SurveyNumber == null ? "" : project.SurveyNumber;
-                    sql_cmnd.Parameters.AddWithValue("@AuthoritiesInfo", SqlDbType.VarChar).Value = project.AuthoritiesInfo == null ? "" : project.AuthoritiesInfo;
-                    sql_cmnd.Parameters.AddWithValue("@SQYDPrice", SqlDbType.VarChar).Value = JsonConvert.SerializeObject(project.sqydPrice);
-                    sql_cmnd.Parameters.AddWithValue("@ProjectHighlights", SqlDbType.VarChar).Value = project.ProjectHighlights == null ? "" : project.ProjectHighlights;
-                    sql_cmnd.Parameters.AddWithValue("@Org_id", SqlDbType.Int).Value = project.Org_id == 0 ? 1 : project.Org_id;
+                    cmd.Parameters.AddWithValue("@Name", SqlDbType.VarChar).Value = SafeString(project.Name);
+                    cmd.Parameters.AddWithValue("@Address", SqlDbType.VarChar).Value = SafeString(project.Address);
+                    cmd.Parameters.AddWithValue("@District", SqlDbType.VarChar).Value = SafeString(project.District);
+                    cmd.Parameters.AddWithValue("@State", SqlDbType.VarChar).Value = SafeString(project.State);
+                    cmd.Parameters.AddWithValue("@PostalCode", SqlDbType.VarChar).Value = SafeString(project.PostalCode);
+                    cmd.Parameters.AddWithValue("@Landmark", SqlDbType.VarChar).Value = SafeString(project.Landmark);
+                    cmd.Parameters.AddWithValue("@ContactPerson1", SqlDbType.VarChar).Value = SafeString(project.ContactPerson1);
+                    cmd.Parameters.AddWithValue("@ConctactPerson2", SqlDbType.VarChar).Value = SafeString(project.ContactPerson2);
+                    cmd.Parameters.AddWithValue("@Person1Mobile1", SqlDbType.VarChar).Value = SafeString(project.Person1Mobile1);
+                    cmd.Parameters.AddWithValue("@Person1Mobile2", SqlDbType.VarChar).Value = SafeString(project.Person1Mobile2);
+                    cmd.Parameters.AddWithValue("@Person2Mobile1", SqlDbType.VarChar).Value = SafeString(project.Person2Mobile1);
+                    cmd.Parameters.AddWithValue("@Person2Mobile2", SqlDbType.VarChar).Value = SafeString(project.Person2Mobile2);
+                    cmd.Parameters.AddWithValue("@Emails", SqlDbType.VarChar).Value = SafeString(project.Emails);
+                    cmd.Parameters.AddWithValue("@Description", SqlDbType.VarChar).Value = SafeString(project.Description);
+                    cmd.Parameters.AddWithValue("@Photos", SqlDbType.VarChar).Value = JsonConvert.SerializeObject(project.Photos);
+                    cmd.Parameters.AddWithValue("@Documents", SqlDbType.VarChar).Value = JsonConvert.SerializeObject(project.Documents);
+                    cmd.Parameters.AddWithValue("@Brocher", SqlDbType.VarChar).Value = JsonConvert.SerializeObject(project.Brocher);
+                    cmd.Parameters.AddWithValue("@GEOInfo", SqlDbType.VarChar).Value = geoInfo;
+                    cmd.Parameters.AddWithValue("@Amenities", SqlDbType.VarChar).Value = SafeString(project.Amenities);
+                    cmd.Parameters.AddWithValue("@Phase", SqlDbType.VarChar).Value = SafeString(project.Phase);
+                    cmd.Parameters.AddWithValue("@Blocks", SqlDbType.VarChar).Value = SafeString(project.Blocks);
+                    cmd.Parameters.AddWithValue("@Faces", SqlDbType.VarChar).Value = JsonConvert.SerializeObject(project.Faces);
+                    cmd.Parameters.AddWithValue("@Naksha", SqlDbType.VarChar).Value = SafeString(project.Naksha);
+                    cmd.Parameters.AddWithValue("@RoadsInfo", SqlDbType.VarChar).Value = SafeString(project.RoadsInfo);
+                    cmd.Parameters.AddWithValue("@NearByFeatures", SqlDbType.VarChar).Value = SafeString(project.NearByFeatures);
+                    cmd.Parameters.AddWithValue("@Directions", SqlDbType.VarChar).Value = SafeString(project.Directions);
+                    cmd.Parameters.AddWithValue("@Disclamier", SqlDbType.VarChar).Value = SafeString(project.Disclamier);
+                    cmd.Parameters.AddWithValue("@TotalArea", SqlDbType.VarChar).Value = SafeString(project.TotalArea);
+                    cmd.Parameters.AddWithValue("@Type", SqlDbType.VarChar).Value = SafeString(project.Type);
+                    cmd.Parameters.AddWithValue("@UserID", SqlDbType.VarChar).Value = project.UserID == 0 ? 1 : project.UserID;
+                    cmd.Parameters.AddWithValue("@ProjectID", SqlDbType.VarChar).Value = project.ProjectID;
+                    cmd.Parameters.AddWithValue("@Borders", SqlDbType.VarChar).Value = project.Borders == null ? EMPTY_STRING : JsonConvert.SerializeObject(project.Borders);
+                    cmd.Parameters.AddWithValue("@RoadNumber", SqlDbType.VarChar).Value = string.IsNullOrWhiteSpace(project.RoadNumber) ? EMPTY_STRING : project.RoadNumber;
+                    cmd.Parameters.AddWithValue("@ModeType", SqlDbType.Int).Value = project.ProjectID == 0 ? (int)Enums.Enums.ActionTypes.Add : (int)Enums.Enums.ActionTypes.Modify;
+                    cmd.Parameters.AddWithValue("@ventureLocation", SqlDbType.VarChar).Value = JsonConvert.SerializeObject(project.ventureLocation);
+                    cmd.Parameters.AddWithValue("@SurveyNumber", SqlDbType.VarChar).Value = SafeString(project.SurveyNumber);
+                    cmd.Parameters.AddWithValue("@AuthoritiesInfo", SqlDbType.VarChar).Value = SafeString(project.AuthoritiesInfo);
+                    cmd.Parameters.AddWithValue("@SQYDPrice", SqlDbType.VarChar).Value = JsonConvert.SerializeObject(project.sqydPrice);
+                    cmd.Parameters.AddWithValue("@ProjectHighlights", SqlDbType.VarChar).Value = SafeString(project.ProjectHighlights);
+                    cmd.Parameters.AddWithValue("@Org_id", SqlDbType.Int).Value = project.Org_id == 0 ? 1 : project.Org_id;
+                    cmd.Parameters.AddWithValue("@ApprochRoads", SqlDbType.VarChar).Value = project.ApprochRoads == null ? EMPTY_STRING : JsonConvert.SerializeObject(project.ApprochRoads);
+                    cmd.Parameters.AddWithValue("@MapAngle", SqlDbType.VarChar).Value = string.IsNullOrWhiteSpace(project.MapAngle) ? "0" : project.MapAngle;
+                });
 
-                    sql_cmnd.Parameters.AddWithValue("@ApprochRoads", SqlDbType.VarChar).Value = project.ApprochRoads == null ? "" : JsonConvert.SerializeObject(project.ApprochRoads);
-
-                    sql_cmnd.Parameters.AddWithValue("@MapAngle", SqlDbType.VarChar).Value = string.IsNullOrWhiteSpace(project.MapAngle) ? "0" : project.MapAngle;
-
-                    sql_cmnd.ExecuteNonQuery();
-                    sqlCon.Close();
-                    responce = "200";
-
-                    if (project.ProjectID == 0)
-                    {
-                        FCMNotification objFCM = new FCMNotification();
-                        bool isSuccess = objFCM.PushNotification(ConfigurationManager.AppSettings["FCM_Project_Title"], ConfigurationManager.AppSettings["FCM_Project_Body"]);
-                    }
+                if (response == STATUS_SUCCESS && project.ProjectID == 0)
+                {
+                    FCMNotification objFCM = new FCMNotification();
+                    objFCM.PushNotification(ConfigurationManager.AppSettings["FCM_Project_Title"], ConfigurationManager.AppSettings["FCM_Project_Body"]);
                 }
-            }
-            catch (Exception Ex)
-            {
-                responce = "500";
-                sqlCon.Close();
-            }
 
-            return responce;
+                return response;
+            }
+            catch (Exception ex)
+            {
+                ExceptionLogs("DBLogic", "AddProjects", ex.ToString());
+                return STATUS_ERROR;
+            }
         }
 
         public List<ProjectsMini> GetProject(Projects proj)
@@ -181,86 +418,15 @@ namespace RE.BusinesLogic
                     {
                         foreach (DataRow dr in ds.Tables[0].Rows)
                         {
-                            ProjectsMini objProj = new ProjectsMini();
-                            objProj.Name = dr["Name"] != null ? dr["Name"].ToString() : "";
-                            objProj.Address = dr["Address"] != null ? dr["Address"].ToString() : "";
-                            objProj.District = dr["District"] != null ? dr["District"].ToString() : "";
-                            objProj.State = dr["State"] != null ? dr["State"].ToString() : "";
-                            objProj.PostalCode = dr["PostalCode"] != null ? dr["PostalCode"].ToString() : "";
-                            objProj.Landmark = dr["Landmark"] != null ? dr["Landmark"].ToString() : "";
-                            if (dr["Photos"] != null && dr["Photos"].ToString() != "")
-                                objProj.Photos = JsonConvert.DeserializeObject<List<files>>(dr["Photos"] != null ? dr["Photos"].ToString() : "");
-
-
-                            objProj.Phase = dr["Phase"] != null ? dr["Phase"].ToString() : "";
-                            objProj.Blocks = dr["Blocks"] != null ? dr["Blocks"].ToString() : "";
-
-                            if (dr["Faces"] != null && dr["Faces"].ToString() != "")
-                                objProj.Faces = JsonConvert.DeserializeObject<DirectionFaces>(dr["Faces"] != null ? dr["Faces"].ToString() : "");
-
-                            objProj.RoadNumber = dr["RoadNumber"] != null ? dr["RoadNumber"].ToString() : "";
-
-                            if (dr["Borders"] != null && dr["Borders"].ToString() != "")
-                                objProj.Borders = JsonConvert.DeserializeObject<DirectionFaces>(dr["Borders"] != null ? dr["Borders"].ToString() : "");
-
-                            objProj.ProjectID = dr["Id"] != null ? Convert.ToInt32(dr["Id"].ToString()) : 0;
-
-                            if (dr["ventureLocation"] != null && dr["ventureLocation"].ToString() != "")
-                                objProj.ventureLocation = JsonConvert.DeserializeObject<Geos>(dr["ventureLocation"] != null ? dr["ventureLocation"].ToString() : "");
-
-                            objProj.CoverPhotoTitle = dr["CoverPhotoTitle"] != null ? dr["CoverPhotoTitle"].ToString() : "";
-                            objProj.CoverPhoto = !string.IsNullOrEmpty(dr["CoverPhoto"].ToString()) ? RoutePath + "/Images/" + dr["CoverPhoto"].ToString() : "";
-                            objProj.CoverPhotoDecription = dr["CoverPhotoDecription"] != null ? dr["CoverPhotoDecription"].ToString() : "";
-                            objProj.CoverPhotoName = !string.IsNullOrEmpty(dr["CoverPhoto"].ToString()) ? dr["CoverPhoto"].ToString() : "";
-                            objProj.PhotoID = Convert.ToInt32(dr["PhotoID"].ToString());
-
-                            objProj.BrochurePhotoTitle = dr["BrochurePhotoTitle"] != null ? dr["BrochurePhotoTitle"].ToString() : "";
-                            objProj.BrochurePhoto = !string.IsNullOrEmpty(dr["BrochurePhoto"].ToString()) ? RoutePath + "/Images/" + dr["BrochurePhoto"].ToString() : "";
-                            objProj.BrochurePhotoDecription = dr["BrochurePhotoDecription"] != null ? dr["BrochurePhotoDecription"].ToString() : "";
-                            objProj.BrochurePhotoName = !string.IsNullOrEmpty(dr["BrochurePhoto"].ToString()) ? dr["BrochurePhoto"].ToString() : "";
-
-                            objProj.LogoPhotoTitle = dr["LogoPhotoTitle"] != null ? dr["LogoPhotoTitle"].ToString() : "";
-                            objProj.LogoPhoto = !string.IsNullOrEmpty(dr["LogoPhoto"].ToString()) ? RoutePath + "/Images/" + dr["LogoPhoto"].ToString() : "";
-                            objProj.LogoPhotoDecription = dr["LogoPhotoDecription"] != null ? dr["LogoPhotoDecription"].ToString() : "";
-                            objProj.LogoPhotoName = !string.IsNullOrEmpty(dr["LogoPhoto"].ToString()) ? dr["LogoPhoto"].ToString() : "";
-
-                            objProj.AuthoritiesInfo = dr["AuthoritiesInfo"] != null ? dr["AuthoritiesInfo"].ToString() : "";
-                            if (dr["SQYDPrice"] != null && dr["SQYDPrice"].ToString() != "")
-                                objProj.sqydPrice = JsonConvert.DeserializeObject<SqydPrice>(dr["SQYDPrice"] != null ? dr["SQYDPrice"].ToString() : "");
-
-                            objProj.ContactPerson1 = dr["ContactPerson1"] != null ? dr["ContactPerson1"].ToString() : "";
-                            objProj.ContactPerson2 = dr["ConctactPerson2"] != null ? dr["ConctactPerson2"].ToString() : "";
-                            objProj.Person1Mobile1 = dr["Person1Mobile1"] != null ? dr["Person1Mobile1"].ToString() : "";
-                            objProj.Person1Mobile2 = dr["Person1Mobile2"] != null ? dr["Person1Mobile2"].ToString() : "";
-                            objProj.Person2Mobile1 = dr["Person2Mobile1"] != null ? dr["Person2Mobile1"].ToString() : "";
-                            objProj.Person2Mobile2 = dr["Person2Mobile2"] != null ? dr["Person2Mobile2"].ToString() : "";
-                            objProj.ProjectHighlights = dr["ProjectHighlights"] != null ? dr["ProjectHighlights"].ToString() : "";
-
-                            objProj.ViewedCount = dr["ViewedCount"] != null && dr["ViewedCount"].ToString() != "" ? Convert.ToInt32(dr["ViewedCount"].ToString()) : 0;
-                            objProj.LikedCount = dr["LikedCount"] != null && dr["LikedCount"].ToString() != "" ? Convert.ToInt32(dr["LikedCount"].ToString()) : 0;
-                            objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
-
-                            objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
-
-                            objProj.OrgLogoUrl = !string.IsNullOrEmpty(dr["LogoUrl"].ToString()) ? RoutePath + "/Images/" + dr["LogoUrl"]?.ToString() : "";
-                            objProj.OrgCoverImageUrl = !string.IsNullOrEmpty(dr["CoverImageUrl"].ToString()) ? RoutePath + "/Images/" + dr["CoverImageUrl"]?.ToString() : "";
-                            objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
-                            objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
-                            objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
-                            objProj.OrgContactPhone = dr["ContactPhone"] != null ? dr["ContactPhone"].ToString() : "";
-                            objProj.OrgWebsite = dr["Website"] != null ? dr["Website"].ToString() : "";
-                            objProj.Org_id = dr["OrganizationId"] != null && dr["OrganizationId"].ToString() != "" ? Convert.ToInt32(dr["OrganizationId"].ToString()) : 0;
-
-
+                            ProjectsMini objProj = MapDataRowToProjectsMini(dr);
                             projects.Add(objProj);
                         }
-
                     }
                 }
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "GetProject", ex.ToString());
             }
 
             return projects;
@@ -276,36 +442,32 @@ namespace RE.BusinesLogic
                 {
                     UserID = User.UserID;
                 }
-                using (sqlCon = new SqlConnection(SqlconString))
+                using (var sqlCon = new SqlConnection(SqlconString))
                 {
                     sqlCon.Open();
-                    SqlCommand sql_cmnd = new SqlCommand("sp_GetUsers", sqlCon);
-                    sql_cmnd.CommandType = CommandType.StoredProcedure;
-                    sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = UserID;
-                    var adapter = new SqlDataAdapter(sql_cmnd);
-
-                    adapter.Fill(ds);
-                    sqlCon.Close();
-
-                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    using (var sql_cmnd = new SqlCommand("sp_GetUsers", sqlCon))
                     {
-                        foreach (DataRow dr in ds.Tables[0].Rows)
-                        {
-                            Users objusers = new Users();
-                            objusers.Name = dr["Name"] != null ? dr["Name"].ToString() : "";
-                            objusers.Email = dr["Email"] != null ? dr["Email"].ToString() : "";
-                            objusers.Mobile = dr["Mobile"] != null ? dr["Mobile"].ToString() : "";
-                            objusers.Role = dr["RoleID"] != null ? Convert.ToInt32(dr["RoleID"].ToString()) : 1;
-                            objusers.UserID = dr["Id"] != null ? Convert.ToInt32(dr["Id"].ToString()) : 1;
-                            objusers.PIN = dr["PIN"] != null ? dr["PIN"].ToString() : "";
+                        sql_cmnd.CommandType = CommandType.StoredProcedure;
+                        sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = UserID;
+                        var adapter = new SqlDataAdapter(sql_cmnd);
+                        adapter.Fill(ds);
+                    }
+                }
+
+                if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                {
+                    foreach (DataRow dr in ds.Tables[0].Rows)
+                    {
+                        Users objusers = MapDataRowToUsers(dr);
+                        if (objusers != null)
                             Users.Add(objusers);
-                        }
                     }
                 }
             }
-            catch (Exception Ex)
+
+            catch (Exception ex)
             {
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "GetUsers", ex.ToString());
             }
 
             return Users;
@@ -334,189 +496,189 @@ namespace RE.BusinesLogic
                     var adapter = new SqlDataAdapter(sql_cmnd);
 
                     adapter.Fill(ds);
-                    sqlCon.Close();
-                    DataSet dsRoadsInfo = new DataSet();
-                    dsRoadsInfo = getProjectRoadInfo(projID, proj.UserID);
+                }
+                DataSet dsRoadsInfo = new DataSet();
+                dsRoadsInfo = getProjectRoadInfo(projID, proj.UserID);
 
-                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                {
+                    foreach (DataRow dr in ds.Tables[0].Rows)
                     {
-                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        objProj.Name = dr["Name"] != null ? dr["Name"].ToString() : "";
+                        objProj.Address = dr["Address"] != null ? dr["Address"].ToString() : "";
+                        objProj.District = dr["District"] != null ? dr["District"].ToString() : "";
+                        objProj.State = dr["State"] != null ? dr["State"].ToString() : "";
+                        objProj.PostalCode = dr["PostalCode"] != null ? dr["PostalCode"].ToString() : "";
+                        objProj.Landmark = dr["Landmark"] != null ? dr["Landmark"].ToString() : "";
+                        objProj.ContactPerson1 = dr["ContactPerson1"] != null ? dr["ContactPerson1"].ToString() : "";
+                        objProj.ContactPerson2 = dr["ConctactPerson2"] != null ? dr["ConctactPerson2"].ToString() : "";
+                        objProj.Person1Mobile1 = dr["Person1Mobile1"] != null ? dr["Person1Mobile1"].ToString() : "";
+                        objProj.Person1Mobile2 = dr["Person1Mobile2"] != null ? dr["Person1Mobile2"].ToString() : "";
+                        objProj.Person2Mobile1 = dr["Person2Mobile1"] != null ? dr["Person2Mobile1"].ToString() : "";
+                        objProj.Person2Mobile2 = dr["Person2Mobile2"] != null ? dr["Person2Mobile2"].ToString() : "";
+                        objProj.ProjectHighlights = dr["ProjectHighlights"] != null ? dr["ProjectHighlights"].ToString() : "";
+                        objProj.Emails = dr["Emails"] != null ? dr["Emails"].ToString() : "";
+                        objProj.Description = dr["Description"] != null ? dr["Description"].ToString() : "";
+
+                        if (dr["Photos"] != null && dr["Photos"].ToString() != "")
+                            objProj.Photos = JsonConvert.DeserializeObject<List<files>>(dr["Photos"] != null ? dr["Photos"].ToString() : "");
+
+                        if (dr["Documents"] != null && dr["Documents"].ToString() != "")
+                            objProj.Documents = JsonConvert.DeserializeObject<List<files>>(dr["Documents"] != null ? dr["Documents"].ToString() : "");
+
+                        if (dr["Brocher"] != null && dr["Brocher"].ToString() != "")
+                            objProj.Brocher = JsonConvert.DeserializeObject<List<files>>(dr["Brocher"] != null ? dr["Brocher"].ToString() : "");
+
+                        string json = dr["GEOInfo"] != null ? dr["GEOInfo"].ToString() : "";
+                        objProj.GEOInfo = JsonConvert.DeserializeObject<List<Geos>>(json);
+
+                        objProj.Amenities = dr["Amenities"] != null ? dr["Amenities"].ToString() : "";
+                        objProj.Phase = dr["Phase"] != null ? dr["Phase"].ToString() : "";
+                        objProj.Blocks = dr["Blocks"] != null ? dr["Blocks"].ToString() : "";
+
+                        if (dr["Faces"] != null && dr["Faces"].ToString() != "")
+                            objProj.Faces = JsonConvert.DeserializeObject<DirectionFaces>(dr["Faces"] != null ? dr["Faces"].ToString() : "");
+
+                        objProj.Naksha = dr["Naksha"] != null ? dr["Naksha"].ToString() : "";
+                        objProj.RoadsInfo = dr["RoadsInfo"] != null ? dr["RoadsInfo"].ToString() : "";
+                        objProj.NearByFeatures = dr["NearByFeatures"] != null ? dr["NearByFeatures"].ToString() : "";
+                        objProj.Directions = dr["Directions"] != null ? dr["Directions"].ToString() : "";
+                        objProj.Disclamier = dr["Disclamier"] != null ? dr["Disclamier"].ToString() : "";
+                        objProj.TotalArea = dr["TotalArea"] != null ? dr["TotalArea"].ToString() : "";
+                        objProj.Type = dr["Type"] != null ? dr["Type"].ToString() : "";
+                        objProj.ProjectID = dr["ID"] != null ? Convert.ToInt32(dr["ID"].ToString()) : 0;
+
+
+                        objProj.RoadNumber = dr["RoadNumber"] != null ? dr["RoadNumber"].ToString() : "";
+
+                        if (dr["Borders"] != null && dr["Borders"].ToString() != "")
+                            objProj.Borders = JsonConvert.DeserializeObject<DirectionFaces>(dr["Borders"] != null ? dr["Borders"].ToString() : "");
+
+
+                        if (dr["ventureLocation"] != null && dr["ventureLocation"].ToString() != "")
+                            objProj.ventureLocation = JsonConvert.DeserializeObject<Geos>(dr["ventureLocation"] != null ? dr["ventureLocation"].ToString() : "");
+
+                        objProj.SurveyNumber = dr["SurveyNumber"] != null ? dr["SurveyNumber"].ToString() : "";
+
+
+                        objProj.CoverPhotoTitle = dr["CoverPhotoTitle"] != null ? dr["CoverPhotoTitle"].ToString() : "";
+                        objProj.CoverPhoto = !string.IsNullOrEmpty(dr["CoverPhoto"].ToString()) ? RoutePath + "/Images/" + dr["CoverPhoto"].ToString() : "";
+                        objProj.CoverPhotoDecription = dr["CoverPhotoDecription"] != null ? dr["CoverPhotoDecription"].ToString() : "";
+                        objProj.CoverPhotoName = !string.IsNullOrEmpty(dr["CoverPhoto"].ToString()) ? dr["CoverPhoto"].ToString() : "";
+
+                        objProj.BrochurePhotoTitle = dr["BrochurePhotoTitle"] != null ? dr["BrochurePhotoTitle"].ToString() : "";
+                        objProj.BrochurePhoto = !string.IsNullOrEmpty(dr["BrochurePhoto"].ToString()) ? RoutePath + "/Images/" + dr["BrochurePhoto"].ToString() : "";
+                        objProj.BrochurePhotoDecription = dr["BrochurePhotoDecription"] != null ? dr["BrochurePhotoDecription"].ToString() : "";
+                        objProj.BrochurePhotoName = !string.IsNullOrEmpty(dr["BrochurePhoto"].ToString()) ? dr["BrochurePhoto"].ToString() : "";
+
+                        objProj.LogoPhotoTitle = dr["LogoPhotoTitle"] != null ? dr["LogoPhotoTitle"].ToString() : "";
+                        objProj.LogoPhoto = !string.IsNullOrEmpty(dr["LogoPhoto"].ToString()) ? RoutePath + "/Images/" + dr["LogoPhoto"].ToString() : "";
+                        objProj.LogoPhotoDecription = dr["LogoPhotoDecription"] != null ? dr["LogoPhotoDecription"].ToString() : "";
+                        objProj.LogoPhotoName = !string.IsNullOrEmpty(dr["LogoPhoto"].ToString()) ? dr["LogoPhoto"].ToString() : "";
+
+                        objProj.AuthoritiesInfo = dr["AuthoritiesInfo"] != null ? dr["AuthoritiesInfo"].ToString() : "";
+                        if (dr["SQYDPrice"] != null && dr["SQYDPrice"].ToString() != "")
+                            objProj.sqydPrice = JsonConvert.DeserializeObject<SqydPrice>(dr["SQYDPrice"] != null ? dr["SQYDPrice"].ToString() : "");
+
+                        objProj.ReviewCount = 0;
+                        objProj.AverageRating = 0;
+
+                        if (ds.Tables.Count > 1)
                         {
-                            objProj.Name = dr["Name"] != null ? dr["Name"].ToString() : "";
-                            objProj.Address = dr["Address"] != null ? dr["Address"].ToString() : "";
-                            objProj.District = dr["District"] != null ? dr["District"].ToString() : "";
-                            objProj.State = dr["State"] != null ? dr["State"].ToString() : "";
-                            objProj.PostalCode = dr["PostalCode"] != null ? dr["PostalCode"].ToString() : "";
-                            objProj.Landmark = dr["Landmark"] != null ? dr["Landmark"].ToString() : "";
-                            objProj.ContactPerson1 = dr["ContactPerson1"] != null ? dr["ContactPerson1"].ToString() : "";
-                            objProj.ContactPerson2 = dr["ConctactPerson2"] != null ? dr["ConctactPerson2"].ToString() : "";
-                            objProj.Person1Mobile1 = dr["Person1Mobile1"] != null ? dr["Person1Mobile1"].ToString() : "";
-                            objProj.Person1Mobile2 = dr["Person1Mobile2"] != null ? dr["Person1Mobile2"].ToString() : "";
-                            objProj.Person2Mobile1 = dr["Person2Mobile1"] != null ? dr["Person2Mobile1"].ToString() : "";
-                            objProj.Person2Mobile2 = dr["Person2Mobile2"] != null ? dr["Person2Mobile2"].ToString() : "";
-                            objProj.ProjectHighlights = dr["ProjectHighlights"] != null ? dr["ProjectHighlights"].ToString() : "";
-                            objProj.Emails = dr["Emails"] != null ? dr["Emails"].ToString() : "";
-                            objProj.Description = dr["Description"] != null ? dr["Description"].ToString() : "";
-
-                            if (dr["Photos"] != null && dr["Photos"].ToString() != "")
-                                objProj.Photos = JsonConvert.DeserializeObject<List<files>>(dr["Photos"] != null ? dr["Photos"].ToString() : "");
-
-                            if (dr["Documents"] != null && dr["Documents"].ToString() != "")
-                                objProj.Documents = JsonConvert.DeserializeObject<List<files>>(dr["Documents"] != null ? dr["Documents"].ToString() : "");
-
-                            if (dr["Brocher"] != null && dr["Brocher"].ToString() != "")
-                                objProj.Brocher = JsonConvert.DeserializeObject<List<files>>(dr["Brocher"] != null ? dr["Brocher"].ToString() : "");
-
-                            string json = dr["GEOInfo"] != null ? dr["GEOInfo"].ToString() : "";
-                            objProj.GEOInfo = JsonConvert.DeserializeObject<List<Geos>>(json);
-
-                            objProj.Amenities = dr["Amenities"] != null ? dr["Amenities"].ToString() : "";
-                            objProj.Phase = dr["Phase"] != null ? dr["Phase"].ToString() : "";
-                            objProj.Blocks = dr["Blocks"] != null ? dr["Blocks"].ToString() : "";
-
-                            if (dr["Faces"] != null && dr["Faces"].ToString() != "")
-                                objProj.Faces = JsonConvert.DeserializeObject<DirectionFaces>(dr["Faces"] != null ? dr["Faces"].ToString() : "");
-
-                            objProj.Naksha = dr["Naksha"] != null ? dr["Naksha"].ToString() : "";
-                            objProj.RoadsInfo = dr["RoadsInfo"] != null ? dr["RoadsInfo"].ToString() : "";
-                            objProj.NearByFeatures = dr["NearByFeatures"] != null ? dr["NearByFeatures"].ToString() : "";
-                            objProj.Directions = dr["Directions"] != null ? dr["Directions"].ToString() : "";
-                            objProj.Disclamier = dr["Disclamier"] != null ? dr["Disclamier"].ToString() : "";
-                            objProj.TotalArea = dr["TotalArea"] != null ? dr["TotalArea"].ToString() : "";
-                            objProj.Type = dr["Type"] != null ? dr["Type"].ToString() : "";
-                            objProj.ProjectID = dr["ID"] != null ? Convert.ToInt32(dr["ID"].ToString()) : 0;
-
-
-                            objProj.RoadNumber = dr["RoadNumber"] != null ? dr["RoadNumber"].ToString() : "";
-
-                            if (dr["Borders"] != null && dr["Borders"].ToString() != "")
-                                objProj.Borders = JsonConvert.DeserializeObject<DirectionFaces>(dr["Borders"] != null ? dr["Borders"].ToString() : "");
-
-
-                            if (dr["ventureLocation"] != null && dr["ventureLocation"].ToString() != "")
-                                objProj.ventureLocation = JsonConvert.DeserializeObject<Geos>(dr["ventureLocation"] != null ? dr["ventureLocation"].ToString() : "");
-
-                            objProj.SurveyNumber = dr["SurveyNumber"] != null ? dr["SurveyNumber"].ToString() : "";
-
-
-                            objProj.CoverPhotoTitle = dr["CoverPhotoTitle"] != null ? dr["CoverPhotoTitle"].ToString() : "";
-                            objProj.CoverPhoto = !string.IsNullOrEmpty(dr["CoverPhoto"].ToString()) ? RoutePath + "/Images/" + dr["CoverPhoto"].ToString() : "";
-                            objProj.CoverPhotoDecription = dr["CoverPhotoDecription"] != null ? dr["CoverPhotoDecription"].ToString() : "";
-                            objProj.CoverPhotoName = !string.IsNullOrEmpty(dr["CoverPhoto"].ToString()) ? dr["CoverPhoto"].ToString() : "";
-
-                            objProj.BrochurePhotoTitle = dr["BrochurePhotoTitle"] != null ? dr["BrochurePhotoTitle"].ToString() : "";
-                            objProj.BrochurePhoto = !string.IsNullOrEmpty(dr["BrochurePhoto"].ToString()) ? RoutePath + "/Images/" + dr["BrochurePhoto"].ToString() : "";
-                            objProj.BrochurePhotoDecription = dr["BrochurePhotoDecription"] != null ? dr["BrochurePhotoDecription"].ToString() : "";
-                            objProj.BrochurePhotoName = !string.IsNullOrEmpty(dr["BrochurePhoto"].ToString()) ? dr["BrochurePhoto"].ToString() : "";
-
-                            objProj.LogoPhotoTitle = dr["LogoPhotoTitle"] != null ? dr["LogoPhotoTitle"].ToString() : "";
-                            objProj.LogoPhoto = !string.IsNullOrEmpty(dr["LogoPhoto"].ToString()) ? RoutePath + "/Images/" + dr["LogoPhoto"].ToString() : "";
-                            objProj.LogoPhotoDecription = dr["LogoPhotoDecription"] != null ? dr["LogoPhotoDecription"].ToString() : "";
-                            objProj.LogoPhotoName = !string.IsNullOrEmpty(dr["LogoPhoto"].ToString()) ? dr["LogoPhoto"].ToString() : "";
-
-                            objProj.AuthoritiesInfo = dr["AuthoritiesInfo"] != null ? dr["AuthoritiesInfo"].ToString() : "";
-                            if (dr["SQYDPrice"] != null && dr["SQYDPrice"].ToString() != "")
-                                objProj.sqydPrice = JsonConvert.DeserializeObject<SqydPrice>(dr["SQYDPrice"] != null ? dr["SQYDPrice"].ToString() : "");
-
-                            objProj.ReviewCount = 0;
-                            objProj.AverageRating = 0;
-
-                            if (ds.Tables.Count > 1)
+                            DataRow[] drReview = ds.Tables[1].Select("ProjectID = " + objProj.ProjectID.ToString());
+                            if (drReview.Length > 0)
                             {
-                                DataRow[] drReview = ds.Tables[1].Select("ProjectID = " + objProj.ProjectID.ToString());
-                                if (drReview.Length > 0)
+                                foreach (DataRow drp in drReview)
                                 {
-                                    foreach (DataRow drp in drReview)
-                                    {
-                                        objProj.ReviewCount = drp["Count"] != null && drp["Count"].ToString() != "" ? Convert.ToInt32(drp["Count"].ToString()) : 0;
-                                        objProj.AverageRating = drp["Rating"] != null && drp["Rating"].ToString() != "" ? Convert.ToDecimal(drp["Rating"].ToString()) : 0;
-                                    }
+                                    objProj.ReviewCount = drp["Count"] != null && drp["Count"].ToString() != "" ? Convert.ToInt32(drp["Count"].ToString()) : 0;
+                                    objProj.AverageRating = drp["Rating"] != null && drp["Rating"].ToString() != "" ? Convert.ToDecimal(drp["Rating"].ToString()) : 0;
                                 }
                             }
-
-                            List<ProjectsAttachments> ProjectPhotos = new List<ProjectsAttachments>();
-                            if (ds.Tables.Count > 2)
-                            {
-                                DataRow[] drPhoto = ds.Tables[2].Select("ProjectID = " + objProj.ProjectID.ToString());
-                                if (drPhoto.Length > 0)
-                                {
-                                    foreach (DataRow drp in drPhoto)
-                                    {
-                                        ProjectsAttachments projPhoto = new ProjectsAttachments();
-                                        projPhoto.Photo = !string.IsNullOrEmpty(drp["Attachments"].ToString()) ? RoutePath + "/Images/" + drp["Attachments"].ToString() : "";
-                                        projPhoto.PhotoName = !string.IsNullOrEmpty(drp["Attachments"].ToString()) ? drp["Attachments"].ToString() : "";
-                                        projPhoto.PhotoTitle = drp["Title"] != null ? drp["Title"].ToString() : "";
-                                        projPhoto.PhotoDecription = drp["Decription"] != null ? drp["Decription"].ToString() : "";
-                                        projPhoto.IsCoverPhoto = drp["IsCoverPhoto"] != null ? Convert.ToInt32(drp["IsCoverPhoto"].ToString()) : 0;
-                                        projPhoto.PhotoID = Convert.ToInt32(drp["ID"].ToString());
-                                        ProjectPhotos.Add(projPhoto);
-                                    }
-                                }
-                                objProj.ProjectPhotos = ProjectPhotos;
-                            }
-
-                            List<RoadsInfo> RoadsInfo = new List<RoadsInfo>();
-                            if (dsRoadsInfo.Tables.Count > 1)
-                            {
-
-                                foreach (DataRow drI in dsRoadsInfo.Tables[0].Rows)
-                                {
-
-                                    int pID = Convert.ToInt32(drI["ProjectID"].ToString());
-                                    string rID = drI["RoadNo"].ToString();
-
-                                    RoadsInfo projRoadsInfo = new RoadsInfo();
-
-                                    DataRow[] drRoadsInfo = dsRoadsInfo.Tables[1].Select("ProjectID = '" + pID.ToString() + "'");
-
-                                    projRoadsInfo.projectID = Convert.ToInt32(drRoadsInfo[0]["ProjectID"].ToString());
-                                    projRoadsInfo.userID = Convert.ToInt32(drRoadsInfo[0]["CreatedBy"].ToString());
-                                    projRoadsInfo.roadNo = drRoadsInfo[0]["RoadNo"] != null ? drRoadsInfo[0]["RoadNo"].ToString() : "";
-                                    projRoadsInfo.roadWidth = drRoadsInfo[0]["RoadWidth"] != null ? drRoadsInfo[0]["RoadWidth"].ToString() : "";
-                                    if (drRoadsInfo.Length > 0)
-                                    {
-                                        List<Geos> roadslagInfo = new List<Geos>();
-                                        foreach (DataRow drp in drRoadsInfo)
-                                        {
-                                            string jsonR = drp["RoadGEOInfo"] != null ? drp["RoadGEOInfo"].ToString() : "";
-                                            List<Geos> RGEOInfo = JsonConvert.DeserializeObject<List<Geos>>(jsonR);
-                                            roadslagInfo.AddRange(RGEOInfo);
-
-                                        }
-                                        projRoadsInfo.RoadGEOInfo = roadslagInfo;
-                                        RoadsInfo.Add(projRoadsInfo);
-                                    }
-                                }
-                                objProj.AllRoadsInfo = RoadsInfo;
-                            }
-
-                            objProj.ViewedCount = dr["ViewedCount"] != null && dr["ViewedCount"].ToString() != "" ? Convert.ToInt32(dr["ViewedCount"].ToString()) : 0;
-                            objProj.LikedCount = dr["LikedCount"] != null && dr["LikedCount"].ToString() != "" ? Convert.ToInt32(dr["LikedCount"].ToString()) : 0;
-                            objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
-
-                            objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
-                            objProj.OrgLogoUrl = !string.IsNullOrEmpty(dr["LogoUrl"].ToString()) ? RoutePath + "/Images/" + dr["LogoUrl"]?.ToString() : "";
-                            objProj.OrgCoverImageUrl = !string.IsNullOrEmpty(dr["CoverImageUrl"].ToString()) ? RoutePath + "/Images/" + dr["CoverImageUrl"]?.ToString() : "";
-                            objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
-                            objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
-                            objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
-                            objProj.OrgContactPhone = dr["ContactPhone"] != null ? dr["ContactPhone"].ToString() : "";
-                            objProj.OrgWebsite = dr["Website"] != null ? dr["Website"].ToString() : "";
-                            objProj.Org_id = dr["OrganizationId"] != null && dr["OrganizationId"].ToString() != "" ? Convert.ToInt32(dr["OrganizationId"].ToString()) : 0;
-
-                            if (dr["ApprochRoads"] != null && dr["ApprochRoads"].ToString() != "")
-                                objProj.ApprochRoads = JsonConvert.DeserializeObject<List<ApproachRoads>>(dr["ApprochRoads"] != null ? dr["ApprochRoads"].ToString() : "");
-
-                            objProj.MapAngle = dr["MapAngle"] != null ? dr["MapAngle"].ToString() : "";
-
                         }
 
+                        List<ProjectsAttachments> ProjectPhotos = new List<ProjectsAttachments>();
+                        if (ds.Tables.Count > 2)
+                        {
+                            DataRow[] drPhoto = ds.Tables[2].Select("ProjectID = " + objProj.ProjectID.ToString());
+                            if (drPhoto.Length > 0)
+                            {
+                                foreach (DataRow drp in drPhoto)
+                                {
+                                    ProjectsAttachments projPhoto = new ProjectsAttachments();
+                                    projPhoto.Photo = !string.IsNullOrEmpty(drp["Attachments"].ToString()) ? RoutePath + "/Images/" + drp["Attachments"].ToString() : "";
+                                    projPhoto.PhotoName = !string.IsNullOrEmpty(drp["Attachments"].ToString()) ? drp["Attachments"].ToString() : "";
+                                    projPhoto.PhotoTitle = drp["Title"] != null ? drp["Title"].ToString() : "";
+                                    projPhoto.PhotoDecription = drp["Decription"] != null ? drp["Decription"].ToString() : "";
+                                    projPhoto.IsCoverPhoto = drp["IsCoverPhoto"] != null ? Convert.ToInt32(drp["IsCoverPhoto"].ToString()) : 0;
+                                    projPhoto.PhotoID = Convert.ToInt32(drp["ID"].ToString());
+                                    ProjectPhotos.Add(projPhoto);
+                                }
+                            }
+                            objProj.ProjectPhotos = ProjectPhotos;
+                        }
+
+                        List<RoadsInfo> RoadsInfo = new List<RoadsInfo>();
+                        if (dsRoadsInfo.Tables.Count > 1)
+                        {
+
+                            foreach (DataRow drI in dsRoadsInfo.Tables[0].Rows)
+                            {
+
+                                int pID = Convert.ToInt32(drI["ProjectID"].ToString());
+                                string rID = drI["RoadNo"].ToString();
+
+                                RoadsInfo projRoadsInfo = new RoadsInfo();
+
+                                DataRow[] drRoadsInfo = dsRoadsInfo.Tables[1].Select("ProjectID = '" + pID.ToString() + "'");
+
+                                projRoadsInfo.projectID = Convert.ToInt32(drRoadsInfo[0]["ProjectID"].ToString());
+                                projRoadsInfo.userID = Convert.ToInt32(drRoadsInfo[0]["CreatedBy"].ToString());
+                                projRoadsInfo.roadNo = drRoadsInfo[0]["RoadNo"] != null ? drRoadsInfo[0]["RoadNo"].ToString() : "";
+                                projRoadsInfo.roadWidth = drRoadsInfo[0]["RoadWidth"] != null ? drRoadsInfo[0]["RoadWidth"].ToString() : "";
+                                if (drRoadsInfo.Length > 0)
+                                {
+                                    List<Geos> roadslagInfo = new List<Geos>();
+                                    foreach (DataRow drp in drRoadsInfo)
+                                    {
+                                        string jsonR = drp["RoadGEOInfo"] != null ? drp["RoadGEOInfo"].ToString() : "";
+                                        List<Geos> RGEOInfo = JsonConvert.DeserializeObject<List<Geos>>(jsonR);
+                                        roadslagInfo.AddRange(RGEOInfo);
+
+                                    }
+                                    projRoadsInfo.RoadGEOInfo = roadslagInfo;
+                                    RoadsInfo.Add(projRoadsInfo);
+                                }
+                            }
+                            objProj.AllRoadsInfo = RoadsInfo;
+                        }
+
+                        objProj.ViewedCount = dr["ViewedCount"] != null && dr["ViewedCount"].ToString() != "" ? Convert.ToInt32(dr["ViewedCount"].ToString()) : 0;
+                        objProj.LikedCount = dr["LikedCount"] != null && dr["LikedCount"].ToString() != "" ? Convert.ToInt32(dr["LikedCount"].ToString()) : 0;
+                        objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
+
+                        objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
+                        objProj.OrgLogoUrl = !string.IsNullOrEmpty(dr["LogoUrl"].ToString()) ? RoutePath + "/Images/" + dr["LogoUrl"]?.ToString() : "";
+                        objProj.OrgCoverImageUrl = !string.IsNullOrEmpty(dr["CoverImageUrl"].ToString()) ? RoutePath + "/Images/" + dr["CoverImageUrl"]?.ToString() : "";
+                        objProj.YearOfEstablishment = dr["YearOfEstablishment"] != null ? dr["YearOfEstablishment"].ToString() : "";
+                        objProj.OrgContactPerson = dr["ContactPerson"] != null ? dr["ContactPerson"].ToString() : "";
+                        objProj.OrgContactEmail = dr["ContactEmail"] != null ? dr["ContactEmail"].ToString() : "";
+                        objProj.OrgContactPhone = dr["ContactPhone"] != null ? dr["ContactPhone"].ToString() : "";
+                        objProj.OrgWebsite = dr["Website"] != null ? dr["Website"].ToString() : "";
+                        objProj.Org_id = dr["OrganizationId"] != null && dr["OrganizationId"].ToString() != "" ? Convert.ToInt32(dr["OrganizationId"].ToString()) : 0;
+
+                        if (dr["ApprochRoads"] != null && dr["ApprochRoads"].ToString() != "")
+                            objProj.ApprochRoads = JsonConvert.DeserializeObject<List<ApproachRoads>>(dr["ApprochRoads"] != null ? dr["ApprochRoads"].ToString() : "");
+
+                        objProj.MapAngle = dr["MapAngle"] != null ? dr["MapAngle"].ToString() : "";
+
                     }
+
                 }
             }
-            catch (Exception Ex)
+
+            catch (Exception ex)
             {
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "GetProjectbyID", ex.ToString());
             }
 
             return objProj;
@@ -528,22 +690,22 @@ namespace RE.BusinesLogic
             try
             {
 
-                using (sqlCon = new SqlConnection(SqlconString))
+                using (var sqlCon = new SqlConnection(SqlconString))
                 {
                     sqlCon.Open();
-                    SqlCommand sql_cmnd = new SqlCommand("sp_GetProjectsRoadsInfo", sqlCon);
-                    sql_cmnd.CommandType = CommandType.StoredProcedure;
-                    sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = ProjID;
-                    sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = UserID;
-                    var adapter = new SqlDataAdapter(sql_cmnd);
-
-                    adapter.Fill(ds);
-                    sqlCon.Close();
+                    using (var sql_cmnd = new SqlCommand("sp_GetProjectsRoadsInfo", sqlCon))
+                    {
+                        sql_cmnd.CommandType = CommandType.StoredProcedure;
+                        sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = ProjID;
+                        sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = UserID;
+                        var adapter = new SqlDataAdapter(sql_cmnd);
+                        adapter.Fill(ds);
+                    }
                 }
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "getProjectRoadInfo", ex.ToString());
                 ds = new DataSet();
             }
             return ds;
@@ -551,49 +713,34 @@ namespace RE.BusinesLogic
 
         public string AddPlots(Plots Plot)
         {
-            int plotID = 0;
-            if (Plot != null && !string.IsNullOrWhiteSpace(Plot.PlotID.ToString()))
-            {
-                plotID = Plot.PlotID;
-            }
-            string Geoinfo = "";
-            Geoinfo = JsonConvert.SerializeObject(Plot.GEOInfo);
-            string responce = string.Empty;
+            int plotID = Plot?.PlotID ?? 0;
             try
             {
-                using (sqlCon = new SqlConnection(SqlconString))
+                string geoInfo = JsonConvert.SerializeObject(Plot.GEOInfo);
+                return ExecuteStoredProcedure("sp_Plot", (cmd) =>
                 {
-                    sqlCon.Open();
-                    SqlCommand sql_cmnd = new SqlCommand("sp_Plot", sqlCon);
-                    sql_cmnd.CommandType = CommandType.StoredProcedure;
-                    sql_cmnd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = plotID;
-                    sql_cmnd.Parameters.AddWithValue("@PlotNo", SqlDbType.VarChar).Value = Plot.PlotNo;
-                    sql_cmnd.Parameters.AddWithValue("@Facings", SqlDbType.VarChar).Value = Plot.Facings;
-                    sql_cmnd.Parameters.AddWithValue("@PlotSize", SqlDbType.VarChar).Value = Plot.PlotSize;
-                    sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = Plot.ProjectID;
-                    sql_cmnd.Parameters.AddWithValue("@UserId", SqlDbType.VarChar).Value = Plot.UserID;
-                    sql_cmnd.Parameters.AddWithValue("@RoadsInfo", SqlDbType.Int).Value = JsonConvert.SerializeObject(Plot.RoadsInfo);
-                    sql_cmnd.Parameters.AddWithValue("@PlotDocuments", SqlDbType.Int).Value = JsonConvert.SerializeObject(Plot.PlotDocuments);
-                    sql_cmnd.Parameters.AddWithValue("@ModeType", SqlDbType.Int).Value = plotID == 0 ? (int)Enums.Enums.ActionTypes.Add : (int)Enums.Enums.ActionTypes.Modify;
-                    sql_cmnd.Parameters.AddWithValue("@GEOInfo", SqlDbType.NVarChar).Value = Geoinfo;
-                    sql_cmnd.Parameters.AddWithValue("@Borders", SqlDbType.VarChar).Value = Plot.Borders == null ? "" : JsonConvert.SerializeObject(Plot.Borders);
-                    sql_cmnd.Parameters.AddWithValue("@RoadNumber", SqlDbType.VarChar).Value = Plot.RoadNumber == null || Plot.RoadNumber == "" ? "" : Plot.RoadNumber;
-                    sql_cmnd.Parameters.AddWithValue("@Description", SqlDbType.VarChar).Value = Plot.PlotDecription ?? "";
-                    sql_cmnd.Parameters.AddWithValue("@Boundaries", SqlDbType.VarChar).Value = Plot.Boundaries == null ? "" : JsonConvert.SerializeObject(Plot.Boundaries);
-                    sql_cmnd.Parameters.AddWithValue("@PlotLength", SqlDbType.NVarChar).Value = Plot.PlotLength;
-
-                    sql_cmnd.ExecuteNonQuery();
-                    sqlCon.Close();
-                }
-                responce = "200";
+                    cmd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = plotID;
+                    cmd.Parameters.AddWithValue("@PlotNo", SqlDbType.VarChar).Value = SafeString(Plot.PlotNo);
+                    cmd.Parameters.AddWithValue("@Facings", SqlDbType.VarChar).Value = SafeString(Plot.Facings);
+                    cmd.Parameters.AddWithValue("@PlotSize", SqlDbType.VarChar).Value = SafeString(Plot.PlotSize);
+                    cmd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = Plot.ProjectID;
+                    cmd.Parameters.AddWithValue("@UserId", SqlDbType.VarChar).Value = Plot.UserID;
+                    cmd.Parameters.AddWithValue("@RoadsInfo", SqlDbType.Int).Value = JsonConvert.SerializeObject(Plot.RoadsInfo);
+                    cmd.Parameters.AddWithValue("@PlotDocuments", SqlDbType.Int).Value = JsonConvert.SerializeObject(Plot.PlotDocuments);
+                    cmd.Parameters.AddWithValue("@ModeType", SqlDbType.Int).Value = plotID == 0 ? (int)Enums.Enums.ActionTypes.Add : (int)Enums.Enums.ActionTypes.Modify;
+                    cmd.Parameters.AddWithValue("@GEOInfo", SqlDbType.NVarChar).Value = geoInfo;
+                    cmd.Parameters.AddWithValue("@Borders", SqlDbType.VarChar).Value = Plot.Borders == null ? EMPTY_STRING : JsonConvert.SerializeObject(Plot.Borders);
+                    cmd.Parameters.AddWithValue("@RoadNumber", SqlDbType.VarChar).Value = string.IsNullOrWhiteSpace(Plot.RoadNumber) ? EMPTY_STRING : Plot.RoadNumber;
+                    cmd.Parameters.AddWithValue("@Description", SqlDbType.VarChar).Value = Plot.PlotDecription ?? EMPTY_STRING;
+                    cmd.Parameters.AddWithValue("@Boundaries", SqlDbType.VarChar).Value = Plot.Boundaries == null ? EMPTY_STRING : JsonConvert.SerializeObject(Plot.Boundaries);
+                    cmd.Parameters.AddWithValue("@PlotLength", SqlDbType.NVarChar).Value = SafeString(Plot.PlotLength);
+                });
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
-
-            return responce;
         }
 
         public List<Plots> GetPlots(Plots Plot)
@@ -607,101 +754,31 @@ namespace RE.BusinesLogic
                 {
                     plotID = Plot.PlotID;
                 }
-                using (sqlCon = new SqlConnection(SqlconString))
+                using (var sqlCon = new SqlConnection(SqlconString))
                 {
                     sqlCon.Open();
-                    SqlCommand sql_cmnd = new SqlCommand("sp_GetPlots", sqlCon);
-                    sql_cmnd.CommandType = CommandType.StoredProcedure;
-                    sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = Plot.ProjectID;
-                    sql_cmnd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = plotID;
-                    sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = Plot.UserID;
-                    var adapter = new SqlDataAdapter(sql_cmnd);
-
-                    adapter.Fill(ds);
-                    sqlCon.Close();
-
-                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    using (var sql_cmnd = new SqlCommand("sp_GetPlots", sqlCon))
                     {
-                        foreach (DataRow dr in ds.Tables[0].Rows)
-                        {
-                            Plots objPlots = new Plots();
-                            objPlots.PlotID = dr["ID"] != null ? Convert.ToInt32(dr["ID"].ToString()) : 0;
-                            objPlots.PlotNo = dr["PlotNo"] != null ? dr["PlotNo"].ToString() : "";
-                            objPlots.Facings = dr["Facings"] != null ? dr["Facings"].ToString() : "";
-                            objPlots.PlotSize = dr["PlotSize"] != null ? dr["PlotSize"].ToString() : "";
-                            objPlots.ProjectID = dr["ProjectID"] != null ? Convert.ToInt32(dr["ProjectID"].ToString()) : 0;
-                            objPlots.UserID = dr["UserID"] != null ? Convert.ToInt32(dr["UserID"].ToString()) : 0;
+                        sql_cmnd.CommandType = CommandType.StoredProcedure;
+                        sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = Plot.ProjectID;
+                        sql_cmnd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = plotID;
+                        sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = Plot.UserID;
+                        var adapter = new SqlDataAdapter(sql_cmnd);
+                        adapter.Fill(ds);
+                    }
+                }
 
-                            if (dr["PlotDocuments"] != null && dr["PlotDocuments"].ToString() != "")
-                                objPlots.PlotDocuments = JsonConvert.DeserializeObject<List<files>>(dr["PlotDocuments"] != null ? dr["PlotDocuments"].ToString() : "");
-
-                            if (dr["RoadsInfo"] != null && dr["RoadsInfo"].ToString() != "")
-                                objPlots.RoadsInfo = JsonConvert.DeserializeObject<DirectionFaces>(dr["RoadsInfo"] != null ? dr["RoadsInfo"].ToString() : "");
-
-                            string json = dr["GEOInfo"] != null ? dr["GEOInfo"].ToString() : "";
-                            objPlots.GEOInfo = JsonConvert.DeserializeObject<List<Geos>>(json);
-                            objPlots.IsSold = dr["isSold"] != null ? Convert.ToInt32(dr["isSold"].ToString()) : 0;
-
-
-                            objPlots.RoadNumber = dr["RoadNumber"] != null ? dr["RoadNumber"].ToString() : "";
-
-                            if (dr["Borders"] != null && dr["Borders"].ToString() != "")
-                                objPlots.Borders = JsonConvert.DeserializeObject<DirectionFaces>(dr["Borders"] != null ? dr["Borders"].ToString() : "");
-
-
-                            objPlots.IsApproved = false;
-                            if (dr["isApproved"] != null && dr["isApproved"].ToString() != "")
-                                objPlots.IsApproved = Convert.ToBoolean(dr["isApproved"]);
-
-                            objPlots.ProjName = dr["ProjName"] != null ? dr["ProjName"].ToString() : "";
-                            objPlots.ProjAddress = dr["ProjAddress"] != null ? dr["ProjAddress"].ToString() : "";
-                            objPlots.ProjDistrict = dr["ProjDistrict"] != null ? dr["ProjDistrict"].ToString() : "";
-                            objPlots.ProjState = dr["ProjState"] != null ? dr["ProjState"].ToString() : "";
-                            objPlots.ProjPostalCode = dr["ProjPostalCode"] != null ? dr["ProjPostalCode"].ToString() : "";
-                            objPlots.ProjLandmark = dr["ProjLandmark"] != null ? dr["ProjLandmark"].ToString() : "";
-
-                            objPlots.CoverPhotoTitle = dr["CoverPhotoTitle"] != null ? dr["CoverPhotoTitle"].ToString() : "";
-                            objPlots.CoverPhoto = !string.IsNullOrEmpty(dr["CoverPhoto"].ToString()) ? RoutePath + "/Images/" + dr["CoverPhoto"].ToString() : "";
-                            objPlots.CoverPhotoDecription = dr["CoverPhotoDecription"] != null ? dr["CoverPhotoDecription"].ToString() : "";
-                            objPlots.PhotoID = Convert.ToInt32(dr["PhotoID"].ToString());
-
-                            objPlots.PlotDecription = dr["PlotDecription"] != null ? dr["PlotDecription"].ToString() : "";
-
-                            if (dr["Boundaries"] != null && dr["Boundaries"].ToString() != "")
-                                objPlots.Boundaries = JsonConvert.DeserializeObject<DirectionFaces>(dr["Boundaries"] != null ? dr["Boundaries"].ToString() : "");
-
-
-                            if (objPlots.IsSold == 1)
-                            {
-                                // Sold
-                                objPlots.SoldUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
-                                objPlots.SoldUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
-                                objPlots.SoldUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
-                            }
-                            else if (objPlots.IsSold == 2)
-                            {
-                                // Reserved
-                                objPlots.ReservedUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
-                                objPlots.ReservedUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
-                                objPlots.ReservedUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
-                            }
-                            else if (objPlots.IsSold == 3)
-                            {
-                                // Resell
-                                objPlots.ResellUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
-                                objPlots.ResellUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
-                                objPlots.ResellUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
-                            }
-
-                            objPlots.SQYDPrice = dr["PlotPrice"] != null && dr["PlotPrice"].ToString() != "" ? Convert.ToDecimal(dr["PlotPrice"].ToString()) : 0;
-
-                            objPlots.PlotLength = dr["PlotLength"] != null ? dr["PlotLength"].ToString() : "";
+                if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                {
+                    foreach (DataRow dr in ds.Tables[0].Rows)
+                    {
+                        Plots objPlots = MapDataRowToPlots(dr);
+                        if (objPlots != null)
                             plots.Add(objPlots);
-                        }
-
                     }
                 }
             }
+
             catch (Exception Ex)
             {
                 sqlCon.Close();
@@ -725,46 +802,47 @@ namespace RE.BusinesLogic
                         {
                             plotID = plot;
                         }
-                        using (sqlCon = new SqlConnection(SqlconString))
+                        using (var sqlCon = new SqlConnection(SqlconString))
                         {
                             sqlCon.Open();
-                            SqlCommand sql_cmnd = new SqlCommand("sp_AssignProjectandPlot", sqlCon);
-                            sql_cmnd.CommandType = CommandType.StoredProcedure;
-                            sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = proj.ProjectID;
-                            sql_cmnd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = plotID;
-                            sql_cmnd.Parameters.AddWithValue("@AssignedUserID", SqlDbType.Int).Value = proj.AssignedUserID;
-                            sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = proj.UserID;
-                            sql_cmnd.ExecuteNonQuery();
-                            sqlCon.Close();
+                            using (var sql_cmnd = new SqlCommand("sp_AssignProjectandPlot", sqlCon))
+                            {
+                                sql_cmnd.CommandType = CommandType.StoredProcedure;
+                                sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = proj.ProjectID;
+                                sql_cmnd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = plotID;
+                                sql_cmnd.Parameters.AddWithValue("@AssignedUserID", SqlDbType.Int).Value = proj.AssignedUserID;
+                                sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = proj.UserID;
+                                sql_cmnd.ExecuteNonQuery();
+                            }
                         }
                     }
                 }
                 else
                 {
-                    using (sqlCon = new SqlConnection(SqlconString))
+                    using (var sqlCon = new SqlConnection(SqlconString))
                     {
-                        int plotID = 0;
                         sqlCon.Open();
-                        SqlCommand sql_cmnd = new SqlCommand("sp_AssignProjectandPlot", sqlCon);
-                        sql_cmnd.CommandType = CommandType.StoredProcedure;
-                        sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = proj.ProjectID;
-                        sql_cmnd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = plotID;
-                        sql_cmnd.Parameters.AddWithValue("@AssignedUserID", SqlDbType.Int).Value = proj.AssignedUserID;
-                        sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = proj.UserID;
-                        sql_cmnd.ExecuteNonQuery();
-                        sqlCon.Close();
+                        using (var sql_cmnd = new SqlCommand("sp_AssignProjectandPlot", sqlCon))
+                        {
+                            sql_cmnd.CommandType = CommandType.StoredProcedure;
+                            sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = proj.ProjectID;
+                            sql_cmnd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = 0;
+                            sql_cmnd.Parameters.AddWithValue("@AssignedUserID", SqlDbType.Int).Value = proj.AssignedUserID;
+                            sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = proj.UserID;
+                            sql_cmnd.ExecuteNonQuery();
+                        }
                     }
                 }
 
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public List<Role> GetRoles()
@@ -920,13 +998,13 @@ namespace RE.BusinesLogic
                 }
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public string CancelPlotSold(Plots Plot)
@@ -949,13 +1027,13 @@ namespace RE.BusinesLogic
                 }
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public checkUsersStatus CreateUsers(Users user)
@@ -1077,6 +1155,7 @@ namespace RE.BusinesLogic
                     sql_cmnd.CommandType = CommandType.StoredProcedure;
                     sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = UserID;
                     sql_cmnd.Parameters.AddWithValue("@VentureID", SqlDbType.Int).Value = User.VentureID;
+                    sql_cmnd.Parameters.AddWithValue("@Level", SqlDbType.Int).Value = User.Level;
                     var adapter = new SqlDataAdapter(sql_cmnd);
 
                     adapter.Fill(ds);
@@ -1211,13 +1290,13 @@ namespace RE.BusinesLogic
                 }
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public List<Agent> GetPendingAgents(Users User)
@@ -1289,13 +1368,13 @@ namespace RE.BusinesLogic
 
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public List<Users> GetAgents(ProjectAssign proj)
@@ -1366,13 +1445,13 @@ namespace RE.BusinesLogic
 
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public List<ProjectsMini> GetBookmarkProjects(LikeProjects proj)
@@ -1644,13 +1723,13 @@ namespace RE.BusinesLogic
 
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public string ChangeCoverPhoto(FileUploadDetails fileUpload)
@@ -1674,13 +1753,13 @@ namespace RE.BusinesLogic
 
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public string AddProjectRoadsInfo(RoadsInfo project)
@@ -1705,13 +1784,13 @@ namespace RE.BusinesLogic
                     responce = "200";
                 }
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
         public string AddRecentVisitedProjects(Projects project)
         {
@@ -1730,13 +1809,13 @@ namespace RE.BusinesLogic
                     responce = "200";
                 }
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
 
@@ -2092,13 +2171,13 @@ namespace RE.BusinesLogic
                 }
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
 
@@ -2281,13 +2360,13 @@ namespace RE.BusinesLogic
 
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public string OTPRequestAndLog(OTPCls otp)
@@ -2309,13 +2388,13 @@ namespace RE.BusinesLogic
                 }
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public string ValidateOTP(OTPCls otp)
@@ -2374,13 +2453,13 @@ namespace RE.BusinesLogic
 
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
 
@@ -2411,13 +2490,13 @@ namespace RE.BusinesLogic
 
                 }
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public string DeleteProjectReview(ProjectReview project)
@@ -2441,13 +2520,13 @@ namespace RE.BusinesLogic
 
                 }
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public List<ProjectReview> getProjectReview(ProjectReview project)
@@ -2526,13 +2605,13 @@ namespace RE.BusinesLogic
                 }
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public string InsertGetInTouchDetails(GetInTouch git)
@@ -2557,13 +2636,13 @@ namespace RE.BusinesLogic
                     responce = "200";
                 }
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public string AssignGetInTouchDetails(GetInTouch git)
@@ -2586,13 +2665,13 @@ namespace RE.BusinesLogic
                     responce = "200";
                 }
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public List<GetInTouch> getInTouchDetails(GetInTouch git)
@@ -2763,13 +2842,13 @@ namespace RE.BusinesLogic
 
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public List<Organization> ManageOrganization(Organization org, string action)
@@ -3094,13 +3173,13 @@ namespace RE.BusinesLogic
                 }
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
 
@@ -3178,13 +3257,13 @@ namespace RE.BusinesLogic
                 }
                 responce = "200";
             }
-            catch (Exception Ex)
+            catch (Exception ex)
             {
-                responce = "500";
-                sqlCon.Close();
+                ExceptionLogs("DBLogic", "AddPlots", ex.ToString());
+                return STATUS_ERROR;
             }
 
-            return responce;
+            return STATUS_SUCCESS;
         }
 
         public List<OrgsAdminsInfo> GetOrgsAdminsInfo(orgAdmin org)
@@ -3681,7 +3760,7 @@ namespace RE.BusinesLogic
                                     objusers.Mobile = drp["Mobile"] != null ? drp["Mobile"].ToString() : "";
                                     objusers.Role = drp["RoleID"] != null ? Convert.ToInt32(drp["RoleID"].ToString()) : 0;
                                     objusers.isOrgAdmin = drp["isOrgAdmin"] != DBNull.Value && Convert.ToBoolean(drp["isOrgAdmin"]);
-                                    AssignedUsers.Add(objusers);                                  
+                                    AssignedUsers.Add(objusers);
                                 }
 
                                 projects.AssignedUsers = AssignedUsers;
@@ -3752,7 +3831,7 @@ namespace RE.BusinesLogic
         }
 
 
-        public bool AssignAndUnAssignProjectsToUsers(assignProjectsToUsers user,string Action)
+        public bool AssignAndUnAssignProjectsToUsers(assignProjectsToUsers user, string Action)
         {
             bool isSuccess = false;
             DataSet ds = new DataSet();
@@ -3866,6 +3945,10 @@ namespace RE.BusinesLogic
                             objProj.Person2Mobile2 = dr["Person2Mobile2"] != null ? dr["Person2Mobile2"].ToString() : "";
                             objProj.ProjectHighlights = dr["ProjectHighlights"] != null ? dr["ProjectHighlights"].ToString() : "";
 
+                            objProj.ViewedCount = dr["ViewedCount"] != null && dr["ViewedCount"].ToString() != "" ? Convert.ToInt32(dr["ViewedCount"].ToString()) : 0;
+                            objProj.LikedCount = dr["LikedCount"] != null && dr["LikedCount"].ToString() != "" ? Convert.ToInt32(dr["LikedCount"].ToString()) : 0;
+                            objProj.isUserLiked = dr["isUserLiked"] != DBNull.Value && Convert.ToBoolean(dr["isUserLiked"]);
+
                             objProj.OrganizationName = dr["OrganizationName"] != null ? dr["OrganizationName"].ToString() : "";
 
                             objProj.OrgLogoUrl = !string.IsNullOrEmpty(dr["LogoUrl"].ToString()) ? RoutePath + "/Images/" + dr["LogoUrl"]?.ToString() : "";
@@ -3888,6 +3971,49 @@ namespace RE.BusinesLogic
             }
 
             return projects;
+        }
+
+        public string Projects_Agents_Cycle_CURD(User_Assign_Project_Agent Proj)
+        {
+            //Add = 1/ UnAssigned project = 2/ Agent un assigned = 3/ Agent update to other agent(higher level)  = 4
+            string responce = string.Empty;
+            try
+            {
+                var ds = new DataSet();
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("Projects_Agents_Cycle_CURD", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@CreatedBy", SqlDbType.Int).Value = Proj.CreatedBy;
+                    sql_cmnd.Parameters.AddWithValue("@AssignTo", SqlDbType.Int).Value = Proj.AssignTo;
+                    sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = Proj.UserID;
+                    sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.VarChar).Value = Proj.ProjectID;
+                    sql_cmnd.Parameters.AddWithValue("@Type", SqlDbType.Int).Value = Proj.Type;
+                    var adapter = new SqlDataAdapter(sql_cmnd);
+
+                    adapter.Fill(ds);
+                    sqlCon.Close();
+
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            return responce = "200";
+                        }
+                    }
+                }
+
+                responce = "200";
+            }
+            catch (Exception Ex)
+            {
+                ExceptionLogs("DBLogic", "Projects_Agents_Cycle_CURD", Ex.ToString());
+                responce = "500";
+                sqlCon.Close();
+            }
+
+            return responce;
         }
     }
 }

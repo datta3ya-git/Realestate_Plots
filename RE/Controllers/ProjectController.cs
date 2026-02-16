@@ -1346,5 +1346,24 @@ namespace RE.Controllers
             res.Projects = proj;
             return jsonconvert(res);
         }
+
+        [Route("api/Project/Assign_Projects_Agents_Cycle")]
+        [HttpPost]
+        public HttpResponseMessage Projects_Agents_Cycle_CURD(User_Assign_Project_Agent Proj)
+        {
+            ProjectStaticResponce res = new ProjectStaticResponce();
+            string proj = dblogic.Projects_Agents_Cycle_CURD(Proj);
+            if (proj == "200")
+            {
+                res.StatusCode = 200;
+                res.Message = "Project Details";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal server error";
+            }
+            return jsonconvert(res);
+        }
     }
 }

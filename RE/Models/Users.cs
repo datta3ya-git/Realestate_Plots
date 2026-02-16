@@ -64,4 +64,13 @@ namespace RE.Models
         public string Exists { get; set; }
         public string NotExists { get; set; }
     }
+
+    public class User_Assign_Project_Agent
+    {
+        public int UserID { get; set; }
+        public string ProjectID { get; set; }
+        public int Type { get; set; }
+        public int AssignTo { get; set; }
+        public int CreatedBy { get; set; }
+    }
 }
