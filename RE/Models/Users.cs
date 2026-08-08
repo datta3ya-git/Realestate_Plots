@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
+using System.Web.Security;
 
 namespace RE.Models
 {
@@ -39,6 +40,8 @@ namespace RE.Models
     {
         public int StatusCode { get; set; }
         public string Message { get; set; }
+
+        public int UserID { get; set; }
     }
     public class UsersResponce
     {
@@ -63,14 +66,42 @@ namespace RE.Models
     {
         public string Exists { get; set; }
         public string NotExists { get; set; }
+        public int UserID { get; set; }
     }
 
     public class User_Assign_Project_Agent
     {
-        public int UserID { get; set; }
+        public int ChildUserID { get; set; }
         public string ProjectID { get; set; }
         public int Type { get; set; }
-        public int AssignTo { get; set; }
+        public int ParentUserID { get; set; }
         public int CreatedBy { get; set; }
+    }
+
+    public class User_Hierarchy
+    {
+        public int UserID { get; set; }
+        public string UserName { get; set; }
+        public string UserEmail { get; set; }
+        public string UserMobile { get; set; }
+        public int ParentUserID { get; set; }
+        public string ParentUserName { get; set; }
+        public string ParentUserEmail { get; set; }
+        public string ParentUserMobile { get; set; }
+        public int RoleID { get; set; }
+        public string RoleName { get; set; }
+        public int VentureID { get; set; }
+        public string ProjectName { get; set; }
+        public string ProjectAddress { get; set; }
+        public int Level { get; set; }
+        public string IdProofNo { get; set; }
+        public string IdProofType { get; set; }
+        public bool IsPaid { get; set; }
+    }
+    public class Users_Hierarchy_Responce
+    {
+        public int StatusCode { get; set; }
+        public string Message { get; set; }
+        public List<User_Hierarchy> users { get; set; }
     }
 }

@@ -77,6 +77,7 @@ namespace RE.Models
     {
         public string email { get; set; }
         public string name { get; set; }
+        public int roleID { get; set; }
     }
 
     public class OTPGeneration

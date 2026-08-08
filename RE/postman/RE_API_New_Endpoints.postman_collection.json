@@ -1,0 +1,64 @@
+{
+	"info": {
+		"_postman_id": "re-api-new-endpoints-001",
+		"name": "RE API - New Endpoints (Plot Status)",
+		"description": "New endpoints from latest changes: GetProjectStatus, GetPlotCurrentStatusWithHistory, SaveStatusForPlots. Uses x-api-key header. Set base_url and api_key in collection or environment.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "apikey",
+		"apikey": [
+			{ "key": "key", "value": "x-api-key", "type": "string" },
+			{ "key": "value", "value": "{{api_key}}", "type": "string" },
+			{ "key": "in", "value": "header", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:port" },
+		{ "key": "api_key", "value": "your-api-key" }
+	],
+	"item": [
+		{
+			"name": "GetProjectStatus",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+					{ "key": "Content-Type", "value": "application/json", "type": "text" }
+				],
+				"body": { "mode": "raw", "raw": "{}" },
+				"url": "{{base_url}}/api/Project/GetProjectStatus"
+			}
+		},
+		{
+			"name": "GetPlotCurrentStatusWithHistory",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+					{ "key": "Content-Type", "value": "application/json", "type": "text" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"PlotID\": 50,\n  \"Type\": \"CURRENT\"\n}"
+				},
+				"url": "{{base_url}}/api/Project/GetPlotCurrentStatusWithHistory"
+			}
+		},
+		{
+			"name": "SaveStatusForPlots",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+					{ "key": "Content-Type", "value": "application/json", "type": "text" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"PlotID\": 50,\n  \"ProjectID\": 2,\n  \"CurrentStatus\": 6,\n  \"Comments\": \"assigned\",\n  \"CreatedBy\": 1,\n  \"PhotoPath\": \"\"\n}"
+				},
+				"url": "{{base_url}}/api/Project/SaveStatusForPlots"
+			}
+		}
+	]
+}

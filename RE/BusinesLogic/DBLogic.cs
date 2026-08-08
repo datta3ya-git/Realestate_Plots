@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using RE.Enums;
 using RE.Models;
 using System;
@@ -276,26 +276,28 @@ namespace RE.BusinesLogic
             objPlots.Boundaries = DeserializeJson<DirectionFaces>(dr, "Boundaries");
             objPlots.SQYDPrice = GetDecimalValue(dr, "PlotPrice");
             objPlots.PlotLength = GetStringValue(dr, "PlotLength");
+            objPlots.StatusName = GetStringValue(dr, "StatusName");
+            objPlots.StatusID = GetIntValue(dr, "isSold");
 
             // Handle sold/reserved/resell user info
-            if (objPlots.IsSold == 1)
-            {
-                objPlots.SoldUserEmail = GetStringValue(dr, "UserEmail");
-                objPlots.SoldUserName = GetStringValue(dr, "UserName");
-                objPlots.SoldUserMobile = GetStringValue(dr, "UserMobile");
-            }
-            else if (objPlots.IsSold == 2)
-            {
-                objPlots.ReservedUserEmail = GetStringValue(dr, "UserEmail");
-                objPlots.ReservedUserName = GetStringValue(dr, "UserName");
-                objPlots.ReservedUserMobile = GetStringValue(dr, "UserMobile");
-            }
-            else if (objPlots.IsSold == 3)
-            {
-                objPlots.ResellUserEmail = GetStringValue(dr, "UserEmail");
-                objPlots.ResellUserName = GetStringValue(dr, "UserName");
-                objPlots.ResellUserMobile = GetStringValue(dr, "UserMobile");
-            }
+            //if (objPlots.IsSold == 1)
+            //{
+            //    objPlots.SoldUserEmail = GetStringValue(dr, "UserEmail");
+            //    objPlots.SoldUserName = GetStringValue(dr, "UserName");
+            //    objPlots.SoldUserMobile = GetStringValue(dr, "UserMobile");
+            //}
+            //else if (objPlots.IsSold == 2)
+            //{
+            //    objPlots.ReservedUserEmail = GetStringValue(dr, "UserEmail");
+            //    objPlots.ReservedUserName = GetStringValue(dr, "UserName");
+            //    objPlots.ReservedUserMobile = GetStringValue(dr, "UserMobile");
+            //}
+            //else if (objPlots.IsSold == 3)
+            //{
+            //    objPlots.ResellUserEmail = GetStringValue(dr, "UserEmail");
+            //    objPlots.ResellUserName = GetStringValue(dr, "UserName");
+            //    objPlots.ResellUserMobile = GetStringValue(dr, "UserMobile");
+            //}
 
             return objPlots;
         }
@@ -1042,6 +1044,7 @@ namespace RE.BusinesLogic
             string responce = string.Empty;
             try
             {
+                var ds1 = new DataSet();
                 string venIDs = "";
                 string ExistVenIDs = "";
                 DataSet ds = VerifyUser(user);
@@ -1091,10 +1094,20 @@ namespace RE.BusinesLogic
                         sql_cmnd.Parameters.AddWithValue("@IdProofType", SqlDbType.VarChar).Value = user.IdProofType == null ? "" : user.IdProofType;
                         sql_cmnd.Parameters.AddWithValue("@IsPaid", SqlDbType.VarChar).Value = user.IsPaid;
                         sql_cmnd.Parameters.AddWithValue("@VentureID", SqlDbType.VarChar).Value = venIDs;
-                        sql_cmnd.ExecuteNonQuery();
+                        var adapter = new SqlDataAdapter(sql_cmnd);
+
+                        adapter.Fill(ds1);
                         sqlCon.Close();
                     }
 
+                    if (ds1 != null && ds1.Tables.Count > 0 && ds1.Tables[0].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds1.Tables[0].Rows)
+                        {
+                            int userID = dr["UserID"] != null ? Convert.ToInt32(dr["UserID"].ToString()) : 1;
+                            res.UserID = userID;
+                        }
+                    }
                 }
                 responce = "200";
             }
@@ -1137,9 +1150,9 @@ namespace RE.BusinesLogic
             return ds;
         }
 
-        public List<Users> GetUsersHierarchy(Users User)
+        public List<User_Hierarchy> GetUsersHierarchy(Users User)
         {
-            List<Users> Users = new List<Users>();
+            List<User_Hierarchy> Users = new List<User_Hierarchy>();
             var ds = new DataSet();
             try
             {
@@ -1165,22 +1178,26 @@ namespace RE.BusinesLogic
                     {
                         foreach (DataRow dr in ds.Tables[0].Rows)
                         {
-                            Users objusers = new Users();
-                            objusers.Name = dr["UserName"] != null ? dr["UserName"].ToString() : "";
-                            objusers.Email = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
-                            objusers.Mobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
-                            objusers.Role = dr["RoleID"] != null ? Convert.ToInt32(dr["RoleID"].ToString()) : 1;
-                            objusers.UserID = dr["UserID"] != null ? Convert.ToInt32(dr["UserID"].ToString()) : 1;
+                            User_Hierarchy objusers = new User_Hierarchy();
+                            objusers.UserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
+                            objusers.UserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
+                            objusers.UserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
+                            objusers.RoleID = dr["RoleID"] != null ? Convert.ToInt32(dr["RoleID"].ToString()) : 0;
+                            objusers.UserID = dr["UserID"] != null ? Convert.ToInt32(dr["UserID"].ToString()) : 0;
 
                             objusers.RoleName = dr["RoleName"] != null ? dr["RoleName"].ToString() : "";
                             objusers.IdProofNo = dr["IdProofNo"] != null ? dr["IdProofNo"].ToString() : "";
                             objusers.IdProofType = dr["IdProofType"] != null ? dr["IdProofType"].ToString() : "";
-                            objusers.VentureName = dr["ProjectName"] != null ? dr["ProjectName"].ToString() : "";
-                            objusers.VentureAddress = dr["ProjectAddress"] != null ? dr["ProjectAddress"].ToString() : "";
-                            objusers.VentureID = dr["VentureID"] != null ? Convert.ToInt32(dr["VentureID"].ToString()) : 1;
-                            objusers.ProjectID = objusers.VentureID.ToString();
+                            objusers.ProjectName = dr["ProjectName"] != null ? dr["ProjectName"].ToString() : "";
+                            objusers.ProjectAddress = dr["ProjectAddress"] != null ? dr["ProjectAddress"].ToString() : "";
+                            objusers.VentureID = dr["VentureID"] != null ? Convert.ToInt32(dr["VentureID"].ToString()) : 0;
                             objusers.IsPaid = dr["IsPaid"] != null ? Convert.ToBoolean(dr["IsPaid"].ToString()) : false;
                             objusers.Level = dr["Level"] != null ? Convert.ToInt32(dr["Level"].ToString()) : 0;
+
+                            objusers.ParentUserID = dr["ParentUserID"] != null ? Convert.ToInt32(dr["ParentUserID"].ToString()) : 0;
+                            objusers.ParentUserName = dr["ParentUserName"] != null ? dr["ParentUserName"].ToString() : "";
+                            objusers.ParentUserEmail = dr["ParentUserEmail"] != null ? dr["ParentUserEmail"].ToString() : "";
+                            objusers.ParentUserMobile = dr["ParentUserMobile"] != null ? dr["ParentUserMobile"].ToString() : "";
 
                             Users.Add(objusers);
                         }
@@ -1255,6 +1272,9 @@ namespace RE.BusinesLogic
                             if (dr["Borders"] != null && dr["Borders"].ToString() != "")
                                 objPlotsInfo.Borders = JsonConvert.DeserializeObject<DirectionFaces>(dr["Borders"] != null ? dr["Borders"].ToString() : "");
 
+                            objPlotsInfo.StatusID = dr["isSold"] != null ? Convert.ToInt32(dr["isSold"].ToString()) : 0;
+
+                            objPlotsInfo.StatusName = dr["StatusName"] != null ? dr["StatusName"].ToString() : "";
 
                             objplots.PlotInfo = objPlotsInfo;
                             plots.Add(objplots);
@@ -2218,6 +2238,203 @@ namespace RE.BusinesLogic
             }
 
             return ProjectAmenities;
+        }
+
+        public List<PlotStatus> GetProjectStatus()
+        {
+            List<PlotStatus> projectStatuses = new List<PlotStatus>();
+            var ds = new DataSet();
+            try
+            {
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("sp_getProjectStatus", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    var adapter = new SqlDataAdapter(sql_cmnd);
+                    adapter.Fill(ds);
+                    sqlCon.Close();
+
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            PlotStatus objStatus = new PlotStatus();
+                            objStatus.StatusID = GetIntValue(dr, "StatusID");
+                            objStatus.StatusName = GetStringValue(dr, "StatusName");
+                            objStatus.StatusCode = GetStringValue(dr, "StatusCode");
+                            projectStatuses.Add(objStatus);
+                        }
+                    }
+                }
+            }
+            catch (Exception Ex)
+            {
+                sqlCon.Close();
+            }
+
+            return projectStatuses;
+        }
+
+        public PlotCurrentStatusResponce GetPlotCurrentStatusWithHistory(int plotId, string type)
+        {
+            var result = new PlotCurrentStatusResponce
+            {
+                History = new List<PlotStatusHistoryItem>(),
+                Photos = new List<PlotStatusPhoto>()
+            };
+            var ds = new DataSet();
+            try
+            {
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("sp_Get_PlotCurrentStatus_with_History", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = plotId;
+                    sql_cmnd.Parameters.AddWithValue("@Type", SqlDbType.VarChar).Value = string.IsNullOrWhiteSpace(type) ? "CURRENT" : type;
+                    var adapter = new SqlDataAdapter(sql_cmnd);
+                    adapter.Fill(ds);
+                    sqlCon.Close();
+
+                    if (ds == null || ds.Tables.Count == 0)
+                        return result;
+
+                    bool isFull = string.Equals(type, "FULL", StringComparison.OrdinalIgnoreCase);
+
+                    if (ds.Tables[0].Rows.Count > 0)
+                    {
+                        DataRow firstRow = ds.Tables[0].Rows[0];
+                        result.PlotID = GetIntValue(firstRow, "PlotID");
+                        result.PlotNumber = GetStringValue(firstRow, "PlotNumber");
+                        result.ProjectID = GetIntValue(firstRow, "ProjectID");
+                        result.CurrentStatus = GetStringValue(firstRow, "CurrentStatus");
+                        result.CurrentStatusID = GetIntValue(firstRow, "CurrentStatusID");
+
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            var historyId = GetIntValue(dr, "HistoryID");
+                            if (historyId == 0 && !isFull)
+                                continue;
+                            var historyItem = new PlotStatusHistoryItem
+                            {
+                                HistoryID = historyId,
+                                StatusID = GetIntValue(dr, "StatusID"),
+                                HistoryStatus = GetStringValue(dr, isFull ? "HistoryStatus" : "LatestStatus"),
+                                CommentText = GetStringValue(dr, "CommentText"),
+                                ChangedBy = GetIntValue(dr, "ChangedBy"),
+                                ChangedDate = dr["ChangedDate"] != null && dr["ChangedDate"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(dr["ChangedDate"]) : null,
+                                ChangedByName = GetStringValue(dr, "Name"),
+                                Email = GetStringValue(dr, "Email"),
+                                Mobile = GetStringValue(dr, "Mobile")
+                            };
+                            result.History.Add(historyItem);
+                        }
+                    }
+
+                    if (ds.Tables.Count > 1 && ds.Tables[1].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[1].Rows)
+                        {
+                            result.Photos.Add(new PlotStatusPhoto
+                            {
+                                PhotoID = GetIntValue(dr, "PhotoID"),
+                                HistoryID = GetIntValue(dr, "HistoryID"),
+                                PhotoPath = GetStringValue(dr, "PhotoPath"),
+                                UploadedBy = GetIntValue(dr, "UploadedBy"),
+                                UploadedDate = dr["UploadedDate"] != null && dr["UploadedDate"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(dr["UploadedDate"]) : null
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception Ex)
+            {
+                sqlCon.Close();
+            }
+
+            return result;
+        }
+
+        public PlotCurrentStatusResponce SaveStatusForPlots(SaveStatusForPlotsRequest request)
+        {
+            var result = new PlotCurrentStatusResponce
+            {
+                History = new List<PlotStatusHistoryItem>(),
+                Photos = new List<PlotStatusPhoto>()
+            };
+            var ds = new DataSet();
+            try
+            {
+                using (sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    SqlCommand sql_cmnd = new SqlCommand("Save_Status_For_Plots", sqlCon);
+                    sql_cmnd.CommandType = CommandType.StoredProcedure;
+                    sql_cmnd.Parameters.AddWithValue("@PlotID", SqlDbType.Int).Value = request.PlotID;
+                    sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = request.ProjectID;
+                    sql_cmnd.Parameters.AddWithValue("@CurrentStatus", SqlDbType.Int).Value = request.CurrentStatus;
+                    sql_cmnd.Parameters.AddWithValue("@Comments", SqlDbType.NVarChar).Value = request.Comments ?? "";
+                    sql_cmnd.Parameters.AddWithValue("@CreatedBy", SqlDbType.Int).Value = request.CreatedBy;
+                    sql_cmnd.Parameters.AddWithValue("@PhotoPath", SqlDbType.NVarChar).Value = request.PhotoPath ?? "";
+                    var adapter = new SqlDataAdapter(sql_cmnd);
+                    adapter.Fill(ds);
+                    sqlCon.Close();
+
+                    if (ds == null || ds.Tables.Count == 0)
+                        return result;
+
+                    if (ds.Tables[0].Rows.Count > 0)
+                    {
+                        DataRow firstRow = ds.Tables[0].Rows[0];
+                        result.PlotID = GetIntValue(firstRow, "PlotID");
+                        result.PlotNumber = GetStringValue(firstRow, "PlotNumber");
+                        result.ProjectID = GetIntValue(firstRow, "ProjectID");
+                        result.CurrentStatus = GetStringValue(firstRow, "CurrentStatus");
+                        result.CurrentStatusID = GetIntValue(firstRow, "CurrentStatusID");
+
+                        foreach (DataRow dr in ds.Tables[0].Rows)
+                        {
+                            var historyId = GetIntValue(dr, "HistoryID");
+                            if (historyId == 0)
+                                continue;
+                            result.History.Add(new PlotStatusHistoryItem
+                            {
+                                HistoryID = historyId,
+                                StatusID = GetIntValue(dr, "StatusID"),
+                                HistoryStatus = GetStringValue(dr, "LatestStatus"),
+                                CommentText = GetStringValue(dr, "CommentText"),
+                                ChangedBy = GetIntValue(dr, "ChangedBy"),
+                                ChangedDate = dr["ChangedDate"] != null && dr["ChangedDate"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(dr["ChangedDate"]) : null,
+                                ChangedByName = GetStringValue(dr, "Name"),
+                                Email = GetStringValue(dr, "Email"),
+                                Mobile = GetStringValue(dr, "Mobile")
+                            });
+                        }
+                    }
+
+                    if (ds.Tables.Count > 1 && ds.Tables[1].Rows.Count > 0)
+                    {
+                        foreach (DataRow dr in ds.Tables[1].Rows)
+                        {
+                            result.Photos.Add(new PlotStatusPhoto
+                            {
+                                PhotoID = GetIntValue(dr, "PhotoID"),
+                                HistoryID = GetIntValue(dr, "HistoryID"),
+                                PhotoPath = GetStringValue(dr, "PhotoPath"),
+                                UploadedBy = GetIntValue(dr, "UploadedBy"),
+                                UploadedDate = dr["UploadedDate"] != null && dr["UploadedDate"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(dr["UploadedDate"]) : null
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception Ex)
+            {
+                sqlCon.Close();
+            }
+
+            return result;
         }
 
         public List<Notifications> GetFCMDetails()
@@ -3408,27 +3625,29 @@ namespace RE.BusinesLogic
                                 objPlots.Boundaries = JsonConvert.DeserializeObject<DirectionFaces>(dr["Boundaries"] != null ? dr["Boundaries"].ToString() : "");
 
 
-                            if (objPlots.IsSold == 1)
-                            {
-                                // Sold
-                                objPlots.SoldUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
-                                objPlots.SoldUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
-                                objPlots.SoldUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
-                            }
-                            else if (objPlots.IsSold == 2)
-                            {
-                                // Reserved
-                                objPlots.ReservedUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
-                                objPlots.ReservedUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
-                                objPlots.ReservedUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
-                            }
-                            else if (objPlots.IsSold == 3)
-                            {
-                                // Resell
-                                objPlots.ResellUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
-                                objPlots.ResellUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
-                                objPlots.ResellUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
-                            }
+                            objPlots.StatusID = dr["isSold"] != null ? Convert.ToInt32(dr["isSold"].ToString()) : 0;
+                            objPlots.StatusName = dr["StatusName"] != null ? dr["StatusName"].ToString() : "";
+                            //if (objPlots.IsSold == 1)
+                            //{
+                            //    // Sold
+                            //    objPlots.SoldUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
+                            //    objPlots.SoldUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
+                            //    objPlots.SoldUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
+                            //}
+                            //else if (objPlots.IsSold == 2)
+                            //{
+                            //    // Reserved
+                            //    objPlots.ReservedUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
+                            //    objPlots.ReservedUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
+                            //    objPlots.ReservedUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
+                            //}
+                            //else if (objPlots.IsSold == 3)
+                            //{
+                            //    // Resell
+                            //    objPlots.ResellUserEmail = dr["UserEmail"] != null ? dr["UserEmail"].ToString() : "";
+                            //    objPlots.ResellUserName = dr["UserName"] != null ? dr["UserName"].ToString() : "";
+                            //    objPlots.ResellUserMobile = dr["UserMobile"] != null ? dr["UserMobile"].ToString() : "";
+                            //}
 
                             objPlots.SQYDPrice = dr["PlotPrice"] != null && dr["PlotPrice"].ToString() != "" ? Convert.ToDecimal(dr["PlotPrice"].ToString()) : 0;
 
@@ -3579,6 +3798,7 @@ namespace RE.BusinesLogic
                     // Common parameters
                     cmd.Parameters.AddWithValue("@mobile", login.Mobile);
                     cmd.Parameters.AddWithValue("@Otp", login.otp);
+                    cmd.Parameters.AddWithValue("@role", login.Role);
                     SqlDataAdapter da = new SqlDataAdapter(cmd);
                     da.Fill(ds);
                     sqlCon.Close();
@@ -3607,6 +3827,7 @@ namespace RE.BusinesLogic
                                     response1.userInfo = new userInfo();
                                     response1.userInfo.email = dr["email"] != null ? dr["email"].ToString() : "";
                                     response1.userInfo.name = dr["name"] != null ? dr["name"].ToString() : "";
+                                    response1.userInfo.roleID = dr["RoleID"] != null && dr["RoleID"].ToString() != "" ? Convert.ToInt32(dr["RoleID"].ToString()) : 0;
                                 }
                                 response.data = response1;
                             }
@@ -3789,9 +4010,10 @@ namespace RE.BusinesLogic
                                 foreach (DataRow drp in ds.Tables[3].Rows)
                                 {
                                     ProjPlotStatus objPlotStatus = new ProjPlotStatus();
-                                    int status = drp["isSold"] != null && drp["isSold"].ToString() != "" ? Convert.ToInt32(drp["isSold"].ToString()) : 0;
+                                    //int status = drp["isSold"] != null && drp["isSold"].ToString() != "" ? Convert.ToInt32(drp["isSold"].ToString()) : 0;
 
-                                    objPlotStatus.Status = Enums.Enums.PlotStatus.GetName(typeof(Enums.Enums.PlotStatus), status);
+                                    objPlotStatus.Status = drp["StatusName"] != null ? drp["StatusName"].ToString() : "";
+                                    //Enums.Enums.PlotStatus.GetName(typeof(Enums.Enums.PlotStatus), status);
                                     objPlotStatus.Count = drp["Count"] != null ? Convert.ToInt32(drp["Count"].ToString()) : 0;
                                     PlotStatus.Add(objPlotStatus);
                                 }
@@ -3986,8 +4208,8 @@ namespace RE.BusinesLogic
                     SqlCommand sql_cmnd = new SqlCommand("Projects_Agents_Cycle_CURD", sqlCon);
                     sql_cmnd.CommandType = CommandType.StoredProcedure;
                     sql_cmnd.Parameters.AddWithValue("@CreatedBy", SqlDbType.Int).Value = Proj.CreatedBy;
-                    sql_cmnd.Parameters.AddWithValue("@AssignTo", SqlDbType.Int).Value = Proj.AssignTo;
-                    sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = Proj.UserID;
+                    sql_cmnd.Parameters.AddWithValue("@AssignTo", SqlDbType.Int).Value = Proj.ParentUserID;
+                    sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = Proj.ChildUserID;
                     sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.VarChar).Value = Proj.ProjectID;
                     sql_cmnd.Parameters.AddWithValue("@Type", SqlDbType.Int).Value = Proj.Type;
                     var adapter = new SqlDataAdapter(sql_cmnd);

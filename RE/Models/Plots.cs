@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -50,6 +50,8 @@ namespace RE.Models
         public decimal SQYDPrice { get; set; }
 
         public string PlotLength { get; set; }
+        public int StatusID { get; set; }
+        public string StatusName { get; set; }
 
     }
 
@@ -150,5 +152,59 @@ namespace RE.Models
         public string Message { get; set; }
 
         public List<PlotsHistory> PlotsHistory { get; set; }
+    }
+
+    /// <summary>Request for sp_Get_PlotCurrentStatus_with_History</summary>
+    public class PlotCurrentStatusRequest
+    {
+        public int PlotID { get; set; }
+        /// <summary>'CURRENT' = current status + latest history; 'FULL' = full history</summary>
+        public string Type { get; set; }
+    }
+
+    public class PlotStatusHistoryItem
+    {
+        public int HistoryID { get; set; }
+        public int StatusID { get; set; }
+        public string HistoryStatus { get; set; }
+        public string CommentText { get; set; }
+        public int ChangedBy { get; set; }
+        public System.DateTime? ChangedDate { get; set; }
+        public string ChangedByName { get; set; }
+        public string Email { get; set; }
+        public string Mobile { get; set; }
+    }
+
+    public class PlotStatusPhoto
+    {
+        public int PhotoID { get; set; }
+        public int HistoryID { get; set; }
+        public string PhotoPath { get; set; }
+        public int UploadedBy { get; set; }
+        public System.DateTime? UploadedDate { get; set; }
+    }
+
+    public class PlotCurrentStatusResponce
+    {
+        public int StatusCode { get; set; }
+        public string Message { get; set; }
+        public int PlotID { get; set; }
+        public string PlotNumber { get; set; }
+        public int ProjectID { get; set; }
+        public string CurrentStatus { get; set; }
+        public int CurrentStatusID { get; set; }
+        public List<PlotStatusHistoryItem> History { get; set; }
+        public List<PlotStatusPhoto> Photos { get; set; }
+    }
+
+    /// <summary>Request for Save_Status_For_Plots</summary>
+    public class SaveStatusForPlotsRequest
+    {
+        public int PlotID { get; set; }
+        public int ProjectID { get; set; }
+        public int CurrentStatus { get; set; }
+        public string Comments { get; set; }
+        public int CreatedBy { get; set; }
+        public string PhotoPath { get; set; }
     }
 }

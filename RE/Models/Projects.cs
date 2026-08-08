@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -280,6 +280,20 @@ namespace RE.Models
         public int StatusCode { get; set; }
         public string Message { get; set; }
         public List<ProjectAmenities> ProjectAmenities { get; set; }
+    }
+
+    public class PlotStatus
+    {
+        public int StatusID { get; set; }
+        public string StatusName { get; set; }
+        public string StatusCode { get; set; }
+    }
+
+    public class ProjectStatusResponce
+    {
+        public int StatusCode { get; set; }
+        public string Message { get; set; }
+        public List<PlotStatus> ProjectStatuses { get; set; }
     }
 
     public class ProjectFileName

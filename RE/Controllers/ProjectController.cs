@@ -1,4 +1,4 @@
-﻿using RE.BusinesLogic;
+using RE.BusinesLogic;
 using RE.Filters;
 using RE.Models;
 using System;
@@ -689,6 +689,57 @@ namespace RE.Controllers
                 res.Message = "No Data Found";
             }
             res.ProjectAmenities = ProjectAmenities;
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/GetProjectStatus")]
+        [HttpPost]
+        public HttpResponseMessage GetProjectStatus()
+        {
+            ProjectStatusResponce res = new ProjectStatusResponce();
+            List<PlotStatus> projectStatuses = new List<PlotStatus>();
+            projectStatuses = dblogic.GetProjectStatus();
+            if (projectStatuses.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Project Status Details";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "No Data Found";
+            }
+            res.ProjectStatuses = projectStatuses;
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/GetPlotCurrentStatusWithHistory")]
+        [HttpPost]
+        public HttpResponseMessage GetPlotCurrentStatusWithHistory(PlotCurrentStatusRequest request)
+        {
+            if (request == null || request.PlotID <= 0)
+            {
+                var err = new PlotCurrentStatusResponce { StatusCode = 400, Message = "Invalid PlotID" };
+                return jsonconvert(err);
+            }
+            PlotCurrentStatusResponce res = dblogic.GetPlotCurrentStatusWithHistory(request.PlotID, request.Type ?? "CURRENT");
+            res.StatusCode = res.PlotID > 0 || res.History.Count > 0 || res.Photos.Count > 0 ? 200 : 204;
+            res.Message = res.StatusCode == 200 ? "Plot status and history" : "No Data Found";
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/SaveStatusForPlots")]
+        [HttpPost]
+        public HttpResponseMessage SaveStatusForPlots(SaveStatusForPlotsRequest request)
+        {
+            if (request == null || request.PlotID <= 0 || request.ProjectID <= 0)
+            {
+                var err = new PlotCurrentStatusResponce { StatusCode = 400, Message = "Invalid PlotID or ProjectID" };
+                return jsonconvert(err);
+            }
+            PlotCurrentStatusResponce res = dblogic.SaveStatusForPlots(request);
+            res.StatusCode = res.PlotID > 0 || res.History.Count > 0 || res.Photos.Count > 0 ? 200 : 500;
+            res.Message = res.StatusCode == 200 ? "Status saved successfully" : "Failed to save status";
             return jsonconvert(res);
         }
 
