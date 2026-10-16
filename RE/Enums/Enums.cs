@@ -14,5 +14,22 @@ namespace RE.Enums
             Modify,
             Delete
         }
+
+        public enum PlotStatus
+        {
+            Available,
+            Sold,
+            Reserved,
+            Cancelled,
+            Resale
+        }
+        public enum PhotoTypes
+        {
+            Common,
+            Cover,
+            Brochure,
+            Logo,
+            Layout
+        }
     }
 }

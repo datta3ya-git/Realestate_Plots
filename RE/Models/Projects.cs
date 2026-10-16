@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -81,6 +81,11 @@ namespace RE.Models
 
         public List<ApproachRoads> ApprochRoads { get; set; }
         public string MapAngle { get; set; }
+
+        public int ReviewCount { get; set; }
+        public decimal AverageRating { get; set; }
+
+        public string VenturePositionChange { get; set; }
 
     }
 
@@ -197,6 +202,9 @@ namespace RE.Models
         public int LikedCount { get; set; }
         public bool isUserLiked { get; set; }
         public int Org_id { get; set; }
+
+        public int ReviewCount { get; set; }
+        public decimal AverageRating { get; set; }
     }
 
     public class ProjectAssign
@@ -240,6 +248,9 @@ namespace RE.Models
         public string UserMobile { get; set; }
         public string UserEmail { get; set; }
         public DateTime EnquiredDate { get; set; }
+
+        public string EnqComments { get; set; }
+        public string Status { get; set; }
     }
 
     public class EnquiredProjectsResponce
@@ -271,6 +282,20 @@ namespace RE.Models
         public int StatusCode { get; set; }
         public string Message { get; set; }
         public List<ProjectAmenities> ProjectAmenities { get; set; }
+    }
+
+    public class PlotStatus
+    {
+        public int StatusID { get; set; }
+        public string StatusName { get; set; }
+        public string StatusCode { get; set; }
+    }
+
+    public class ProjectStatusResponce
+    {
+        public int StatusCode { get; set; }
+        public string Message { get; set; }
+        public List<PlotStatus> ProjectStatuses { get; set; }
     }
 
     public class ProjectFileName
@@ -334,5 +359,56 @@ namespace RE.Models
         public string Message { get; set; }
 
         public List<LikedProjects> Projects { get; set; }
+    }
+
+    public class ProjectStats
+    {
+        public ProjectsMini ProjectDetails { get; set; }
+
+        public List<ProjAssignedUsers> AssignedUsers { get; set; }
+        public List<ProjFacingPlots> FacingPlots { get; set; }
+        public List<ProjPlotStatus> PlotStatus { get; set; }
+
+    }
+
+    public class ProjAssignedUsers
+    {
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public string Mobile { get; set; }
+        public int Role { get; set; }
+        public bool isOrgAdmin { get; set; }
+
+    }
+    public class ProjFacingPlots
+    {
+        public string Facings { get; set; }
+        public int Count { get; set; }
+    }
+    public class ProjPlotStatus
+    {
+        public string Status { get; set; }
+        public int Count { get; set; }
+    }
+
+    public class ProjectStatsResponce
+    {
+        public int StatusCode { get; set; }
+        public string Message { get; set; }
+        public ProjectStats ProjectStats { get; set; }
+    }
+
+    public class assignProjectsToUsers
+    {
+        public int UserID { get; set; }
+        public int ProjectID { get; set; }
+        public int LoginUserID { get; set; }
+    }
+
+    public class ProjectRoads
+    {
+        public int UserID { get; set; }
+        public int ProjectID { get; set; }
+        public int RoadNo { get; set; }
     }
 }

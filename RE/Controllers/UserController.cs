@@ -154,6 +154,7 @@ namespace RE.Controllers
             UserResponce res = new UserResponce();
             checkUsersStatus res1 = new checkUsersStatus();
             res1 = dblogic.CreateUsers(user);
+            res.UserID = res1.UserID;
 
             if (res1.Exists == "" && res1.NotExists == "")
             {
@@ -188,8 +189,8 @@ namespace RE.Controllers
         [HttpPost]
         public HttpResponseMessage GetUsersHierarchy(Users user)
         {
-            UsersResponce res = new UsersResponce();
-            List<Users> users = new List<Users>();
+            Users_Hierarchy_Responce res = new Users_Hierarchy_Responce();
+            List<User_Hierarchy> users = new List<User_Hierarchy>();
             users = dblogic.GetUsersHierarchy(user);
             if (users.Count > 0)
             {

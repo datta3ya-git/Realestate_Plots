@@ -1,4 +1,4 @@
-﻿using RE.BusinesLogic;
+using RE.BusinesLogic;
 using RE.Filters;
 using RE.Models;
 using System;
@@ -129,7 +129,7 @@ namespace RE.Controllers
             return jsonconvert(res);
         }
 
-        [Route("api/Project/AssignProjects")]
+        //[Route("api/Project/AssignProjects")]
         [Route("api/Project/AssignPlots")]
         [HttpPost]
         public HttpResponseMessage AssignProjectsandPlots(ProjectAssign proj)
@@ -689,6 +689,57 @@ namespace RE.Controllers
                 res.Message = "No Data Found";
             }
             res.ProjectAmenities = ProjectAmenities;
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/GetProjectStatus")]
+        [HttpPost]
+        public HttpResponseMessage GetProjectStatus()
+        {
+            ProjectStatusResponce res = new ProjectStatusResponce();
+            List<PlotStatus> projectStatuses = new List<PlotStatus>();
+            projectStatuses = dblogic.GetProjectStatus();
+            if (projectStatuses.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Project Status Details";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "No Data Found";
+            }
+            res.ProjectStatuses = projectStatuses;
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/GetPlotCurrentStatusWithHistory")]
+        [HttpPost]
+        public HttpResponseMessage GetPlotCurrentStatusWithHistory(PlotCurrentStatusRequest request)
+        {
+            if (request == null || request.PlotID <= 0)
+            {
+                var err = new PlotCurrentStatusResponce { StatusCode = 400, Message = "Invalid PlotID" };
+                return jsonconvert(err);
+            }
+            PlotCurrentStatusResponce res = dblogic.GetPlotCurrentStatusWithHistory(request.PlotID, request.Type ?? "CURRENT");
+            res.StatusCode = res.PlotID > 0 || res.History.Count > 0 || res.Photos.Count > 0 ? 200 : 204;
+            res.Message = res.StatusCode == 200 ? "Plot status and history" : "No Data Found";
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/SaveStatusForPlots")]
+        [HttpPost]
+        public HttpResponseMessage SaveStatusForPlots(SaveStatusForPlotsRequest request)
+        {
+            if (request == null || request.PlotID <= 0 || request.ProjectID <= 0)
+            {
+                var err = new PlotCurrentStatusResponce { StatusCode = 400, Message = "Invalid PlotID or ProjectID" };
+                return jsonconvert(err);
+            }
+            PlotCurrentStatusResponce res = dblogic.SaveStatusForPlots(request);
+            res.StatusCode = res.PlotID > 0 || res.History.Count > 0 || res.Photos.Count > 0 ? 200 : 500;
+            res.Message = res.StatusCode == 200 ? "Status saved successfully" : "Failed to save status";
             return jsonconvert(res);
         }
 
@@ -1267,6 +1318,122 @@ namespace RE.Controllers
                 res.Message = "No Data Found";
             }
             res.PlotsHistory = plots;
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/GetProjectStats")]
+        [HttpPost]
+        public HttpResponseMessage GetProjectStats(ProjectDelete project)
+        {
+            ProjectStatsResponce res = new ProjectStatsResponce();
+            res.ProjectStats = dblogic.GetProjectStats(project);
+            if (res.ProjectStats != null)
+            {
+                res.StatusCode = 200;
+                res.Message = "Project Stats Details";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "No Data Found";
+            }
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/AssignProjectsToUsers")]
+        [HttpPost]
+        public HttpResponseMessage AssignProjectsToUsers(assignProjectsToUsers userProject)
+        {
+            ProjectStaticResponce res = new ProjectStaticResponce();
+            bool responce = dblogic.AssignAndUnAssignProjectsToUsers(userProject, "assigned");
+            if (responce)
+            {
+                res.StatusCode = 200;
+                res.Message = "Projects assigned to user Successfully";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
+            return jsonconvert(res);
+        }
+        [Route("api/Project/UnAssignProjectsToUsers")]
+        [HttpPost]
+        public HttpResponseMessage UnAssignProjectsToUsers(assignProjectsToUsers userProject)
+        {
+            ProjectStaticResponce res = new ProjectStaticResponce();
+            bool responce = dblogic.AssignAndUnAssignProjectsToUsers(userProject, "unassigned");
+            if (responce)
+            {
+                res.StatusCode = 200;
+                res.Message = "Projects unassigned to user Successfully";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/GetProjectsbyAgentID")]
+        [HttpPost]
+        public HttpResponseMessage GetProjectsbyAgentID(ProjectDelete project)
+        {
+            ProjectsResponce res = new ProjectsResponce();
+            List<ProjectsMini> proj = new List<ProjectsMini>();
+            proj = dblogic.GetProjectsbyAgentID(project);
+            if (proj.Count > 0)
+            {
+                res.StatusCode = 200;
+                res.Message = "Project Details";
+            }
+            else
+            {
+                res.StatusCode = 204;
+                res.Message = "No Data Found";
+            }
+            res.Projects = proj;
+            return jsonconvert(res);
+        }
+
+        [Route("api/Project/Assign_Projects_Agents_Cycle")]
+        [HttpPost]
+        public HttpResponseMessage Projects_Agents_Cycle_CURD(User_Assign_Project_Agent Proj)
+        {
+            ProjectStaticResponce res = new ProjectStaticResponce();
+            string proj = dblogic.Projects_Agents_Cycle_CURD(Proj);
+            if (proj == "200")
+            {
+                res.StatusCode = 200;
+                res.Message = "Project Details";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal server error";
+            }
+            return jsonconvert(res);
+        }
+
+
+        [Route("api/Project/DeleteProjectRoads")]
+        [HttpPost]
+        public HttpResponseMessage DeleteProjectRoads(ProjectRoads project)
+        {
+            ProjectStaticResponce res = new ProjectStaticResponce();
+            bool responce = dblogic.DeleteProjectRoads(project);
+            if (responce)
+            {
+                res.StatusCode = 200;
+                res.Message = "Road deleted Successfully";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
             return jsonconvert(res);
         }
     }

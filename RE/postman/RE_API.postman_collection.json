@@ -1,0 +1,1343 @@
+{
+	"info": {
+		"_postman_id": "re-api-collection-001",
+		"name": "RE API",
+		"description": "Real Estate API - All endpoints with test scripts. Uses x-api-key header. Set base_url and api_key in environment.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "apikey",
+		"apikey": [
+			{ "key": "key", "value": "x-api-key", "type": "string" },
+			{ "key": "value", "value": "{{api_key}}", "type": "string" },
+			{ "key": "in", "value": "header", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:port" },
+		{ "key": "api_key", "value": "your-api-key" }
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": { "exec": [""], "type": "text/javascript" }
+		},
+		{
+			"listen": "test",
+			"script": {
+				"exec": [
+					"// Common tests for all RE API requests",
+					"pm.test('Status code is present', function() {",
+					"    pm.expect(pm.response.code).to.be.a('number');",
+					"});",
+					"pm.test('Status code is 2xx or 204 or 500', function() {",
+					"    var code = pm.response.code;",
+					"    pm.expect([200, 201, 202, 204, 500]).to.include(code);",
+					"});",
+					"if (pm.response.code >= 200 && pm.response.code < 300 && pm.response.text()) {",
+					"    try {",
+					"        var json = pm.response.json();",
+					"        if (json && json.hasOwnProperty('StatusCode')) {",
+					"            pm.test('Response has StatusCode', function() { pm.expect(json.StatusCode).to.be.a('number'); });",
+					"            pm.test('Response has Message', function() { pm.expect(json).to.have.property('Message'); });",
+					"        }",
+					"    } catch (e) {}",
+					"}"
+				],
+				"type": "text/javascript"
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "Project",
+			"item": [
+				{
+					"name": "AddProject / UpdateProject",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 0,\n  \"Name\": \"\",\n  \"Address\": \"\",\n  \"State\": \"\",\n  \"District\": \"\",\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/AddProject"
+					}
+				},
+				{
+					"name": "GetProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{base_url}}/api/Project/GetProjects"
+					}
+				},
+				{
+					"name": "GetProjectByID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Project/GetProjectByID"
+					}
+				},
+				{
+					"name": "AddPlots / UpdatePlots",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "[{\n  \"PlotID\": 0,\n  \"PlotNo\": \"\",\n  \"ProjectID\": 1,\n  \"UserID\": 0\n}]" },
+						"url": "{{base_url}}/api/Project/AddPlots"
+					}
+				},
+				{
+					"name": "GetPlots / GetPlotsByID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Project/GetPlots"
+					}
+				},
+				{
+					"name": "AssignPlots",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"UserID\": 0,\n  \"PlotID\": [1]\n}" },
+						"url": "{{base_url}}/api/Project/AssignPlots"
+					}
+				},
+				{
+					"name": "SaveImages",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" }],
+						"body": { "mode": "formdata", "formdata": [{ "key": "file", "type": "file", "src": "" }] },
+						"url": "{{base_url}}/api/Project/SaveImages"
+					}
+				},
+				{
+					"name": "DeleteImages",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"FileName\": \"\"\n}" },
+						"url": "{{base_url}}/api/Project/DeleteImages"
+					}
+				},
+				{
+					"name": "PlotSold / PlotReserve / PlotResell",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"PlotID\": 1,\n  \"ProjectID\": 1,\n  \"IsSold\": 1\n}" },
+						"url": "{{base_url}}/api/Project/PlotSold"
+					}
+				},
+				{
+					"name": "CancelPlotSold / CancelPlotReserve / CancelPlotResell",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"PlotID\": 1,\n  \"ProjectID\": 1,\n  \"IsSold\": 1\n}" },
+						"url": "{{base_url}}/api/Project/CancelPlotSold"
+					}
+				},
+				{
+					"name": "GetPlotsforApprovel",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Project/GetPlotsforApprovel"
+					}
+				},
+				{
+					"name": "ApprovePlots",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"PlotIDs\": [1],\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Project/ApprovePlots"
+					}
+				},
+				{
+					"name": "GetPendingAgents",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/GetPendingAgents"
+					}
+				},
+				{
+					"name": "ApproveAgents",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "[{\n  \"UserID\": 0,\n  \"ProjectID\": 1,\n  \"IsApproved\": true\n}]" },
+						"url": "{{base_url}}/api/Project/ApproveAgents"
+					}
+				},
+				{
+					"name": "BookmarkProject",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"UserID\": 0,\n  \"isLiked\": true\n}" },
+						"url": "{{base_url}}/api/Project/BookmarkProject"
+					}
+				},
+				{
+					"name": "GetBookmarkProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/GetBookmarkProjects"
+					}
+				},
+				{
+					"name": "EnquiryProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/EnquiryProjects"
+					}
+				},
+				{
+					"name": "CompleteEnquiryProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/CompleteEnquiryProjects"
+					}
+				},
+				{
+					"name": "GetEnquiryProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/GetEnquiryProjects"
+					}
+				},
+				{
+					"name": "uploadPhoto",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"PlotID\": 0,\n  \"FileName\": \"\",\n  \"FileType\": \"\"\n}" },
+						"url": "{{base_url}}/api/Project/uploadPhoto"
+					}
+				},
+				{
+					"name": "ChangeCoverPhoto",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"PlotID\": 0,\n  \"FileName\": \"\"\n}" },
+						"url": "{{base_url}}/api/Project/ChangeCoverPhoto"
+					}
+				},
+				{
+					"name": "AddProjectRoadsInfo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"RoadsInfo\": []\n}" },
+						"url": "{{base_url}}/api/Project/AddProjectRoadsInfo"
+					}
+				},
+				{
+					"name": "AddRecentVisitedProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/AddRecentVisitedProjects"
+					}
+				},
+				{
+					"name": "GetRecentVisitedProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/GetRecentVisitedProjects"
+					}
+				},
+				{
+					"name": "GetProjectsListBasedOnRange",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Latitude\": 0,\n  \"Longitude\": 0,\n  \"Range\": 10\n}" },
+						"url": "{{base_url}}/api/Project/GetProjectsListBasedOnRange"
+					}
+				},
+				{
+					"name": "GetLatestProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{base_url}}/api/Project/GetLatestProjects"
+					}
+				},
+				{
+					"name": "GetProjectAmenities",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Project/GetProjectAmenities"
+					}
+				},
+				{
+					"name": "GetProjectStatus",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{base_url}}/api/Project/GetProjectStatus"
+					}
+				},
+				{
+					"name": "GetPlotCurrentStatusWithHistory",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"PlotID\": 50,\n  \"Type\": \"CURRENT\"\n}" },
+						"url": "{{base_url}}/api/Project/GetPlotCurrentStatusWithHistory"
+					}
+				},
+				{
+					"name": "SaveStatusForPlots",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"PlotID\": 50,\n  \"ProjectID\": 2,\n  \"CurrentStatus\": 6,\n  \"Comments\": \"assigned\",\n  \"CreatedBy\": 1,\n  \"PhotoPath\": \"\"\n}" },
+						"url": "{{base_url}}/api/Project/SaveStatusForPlots"
+					}
+				},
+				{
+					"name": "saveRevirewImages",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" }],
+						"body": { "mode": "formdata", "formdata": [{ "key": "file", "type": "file", "src": "" }] },
+						"url": "{{base_url}}/api/Project/saveRevirewImages"
+					}
+				},
+				{
+					"name": "AddProjectReview / UpdateProjectReview",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"UserID\": 0,\n  \"Rating\": 5,\n  \"Review\": \"\"\n}" },
+						"url": "{{base_url}}/api/Project/AddProjectReview"
+					}
+				},
+				{
+					"name": "DeleteProjectReview",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ReviewID\": 0,\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Project/DeleteProjectReview"
+					}
+				},
+				{
+					"name": "getProjectReviews",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Project/getProjectReviews"
+					}
+				},
+				{
+					"name": "UnassignedPlots",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"UserID\": 0,\n  \"PlotIDs\": [1]\n}" },
+						"url": "{{base_url}}/api/Project/UnassignedPlots"
+					}
+				},
+				{
+					"name": "AddGetInTouchDetails",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"Name\": \"\",\n  \"Email\": \"\",\n  \"Mobile\": \"\",\n  \"Message\": \"\"\n}" },
+						"url": "{{base_url}}/api/Project/AddGetInTouchDetails"
+					}
+				},
+				{
+					"name": "AssignGetInTouchDetails",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"GetInTouchID\": 0,\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/AssignGetInTouchDetails"
+					}
+				},
+				{
+					"name": "getInTouchDetails",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/getInTouchDetails"
+					}
+				},
+				{
+					"name": "addTermsAndConditions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"TermsText\": \"\",\n  \"ProjectID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/addTermsAndConditions"
+					}
+				},
+				{
+					"name": "recordUserTermsApproval",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0,\n  \"TermsID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/recordUserTermsApproval"
+					}
+				},
+				{
+					"name": "checkUserTermsStatus",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/checkUserTermsStatus"
+					}
+				},
+				{
+					"name": "GetProjectsMostViewedBasedOnRange",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Latitude\": 0,\n  \"Longitude\": 0,\n  \"Range\": 10\n}" },
+						"url": "{{base_url}}/api/Project/GetProjectsMostViewedBasedOnRange"
+					}
+				},
+				{
+					"name": "LikeProject",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"UserID\": 0,\n  \"isLiked\": true\n}" },
+						"url": "{{base_url}}/api/Project/LikeProject"
+					}
+				},
+				{
+					"name": "AddOrganization",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"OrganizationName\": \"\",\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/AddOrganization"
+					}
+				},
+				{
+					"name": "UpdateOrganization",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Org_id\": 0,\n  \"OrganizationName\": \"\"\n}" },
+						"url": "{{base_url}}/api/Project/UpdateOrganization"
+					}
+				},
+				{
+					"name": "GetOrganizations",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{base_url}}/api/Project/GetOrganizations"
+					}
+				},
+				{
+					"name": "GetProjectbyOrgID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Org_id\": 1\n}" },
+						"url": "{{base_url}}/api/Project/GetProjectbyOrgID"
+					}
+				},
+				{
+					"name": "UpdatePlotPrice",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"PlotID\": 1,\n  \"ProjectID\": 1,\n  \"SQYDPrice\": 0\n}" },
+						"url": "{{base_url}}/api/Project/UpdatePlotPrice"
+					}
+				},
+				{
+					"name": "DeleteProjectPlots",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"PlotIDs\": [1],\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Project/DeleteProjectPlots"
+					}
+				},
+				{
+					"name": "GetUserLikedProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/GetUserLikedProjects"
+					}
+				},
+				{
+					"name": "AssignOrganizationAdmin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0,\n  \"Org_id\": 1\n}" },
+						"url": "{{base_url}}/api/Project/AssignOrganizationAdmin"
+					}
+				},
+				{
+					"name": "UnAssignOrganizationAdmin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0,\n  \"Org_id\": 1\n}" },
+						"url": "{{base_url}}/api/Project/UnAssignOrganizationAdmin"
+					}
+				},
+				{
+					"name": "GetAdminByOrg / GetOrgByAdmins",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Org_id\": 1\n}" },
+						"url": "{{base_url}}/api/Project/GetAdminByOrg"
+					}
+				},
+				{
+					"name": "GetUserAllPlots",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/GetUserAllPlots"
+					}
+				},
+				{
+					"name": "GetPlotHistory",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"PlotID\": 1,\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Project/GetPlotHistory"
+					}
+				},
+				{
+					"name": "GetProjectStats",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Project/GetProjectStats"
+					}
+				},
+				{
+					"name": "AssignProjectsToUsers",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectIDs\": [1],\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/AssignProjectsToUsers"
+					}
+				},
+				{
+					"name": "UnAssignProjectsToUsers",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectIDs\": [1],\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/UnAssignProjectsToUsers"
+					}
+				},
+				{
+					"name": "GetProjectsbyAgentID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Project/GetProjectsbyAgentID"
+					}
+				},
+				{
+					"name": "Assign_Projects_Agents_Cycle",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ChildUserID\": 0,\n  \"ProjectID\": \"1\",\n  \"Type\": 1,\n  \"ParentUserID\": 0,\n  \"CreatedBy\": 0\n}" },
+						"url": "{{base_url}}/api/Project/Assign_Projects_Agents_Cycle"
+					}
+				}
+			]
+		},
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "AddUser / AddEndUser",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Name\": \"\",\n  \"Email\": \"\",\n  \"Mobile\": \"\",\n  \"Role\": 0,\n  \"ProjectID\": \"\"\n}" },
+						"url": "{{base_url}}/api/User/AddUser"
+					}
+				},
+				{
+					"name": "DeactivateUser",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/User/DeactivateUser"
+					}
+				},
+				{
+					"name": "GetUsers",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{base_url}}/api/User/GetUsers"
+					}
+				},
+				{
+					"name": "GetRoles",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{base_url}}/api/User/GetRoles"
+					}
+				},
+				{
+					"name": "GetEndUsers",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{base_url}}/api/User/GetEndUsers"
+					}
+				},
+				{
+					"name": "GetUsersByMobile",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Mobile\": \"\"\n}" },
+						"url": "{{base_url}}/api/User/GetUsersByMobile"
+					}
+				},
+				{
+					"name": "CreateUser / CreateEndUser",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Name\": \"\",\n  \"Email\": \"\",\n  \"Mobile\": \"\",\n  \"Role\": 0,\n  \"ProjectID\": \"\"\n}" },
+						"url": "{{base_url}}/api/User/CreateUser"
+					}
+				},
+				{
+					"name": "GetUsersHierarchy",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/User/GetUsersHierarchy"
+					}
+				},
+				{
+					"name": "GetAgents",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{base_url}}/api/User/GetAgents"
+					}
+				},
+				{
+					"name": "OtpAutenticatoionAndAuthorization",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Mobile\": \"\",\n  \"OTP\": \"\"\n}" },
+						"url": "{{base_url}}/api/User/OtpAutenticatoionAndAuthorization"
+					}
+				},
+				{
+					"name": "verifySignupWithOTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Mobile\": \"\",\n  \"OTP\": \"\"\n}" },
+						"url": "{{base_url}}/api/User/verifySignupWithOTP"
+					}
+				},
+				{
+					"name": "UpdateUserPIN",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0,\n  \"PIN\": \"\"\n}" },
+						"url": "{{base_url}}/api/User/UpdateUserPIN"
+					}
+				},
+				{
+					"name": "ValidateOTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Mobile\": \"\",\n  \"OTP\": \"\"\n}" },
+						"url": "{{base_url}}/api/User/ValidateOTP"
+					}
+				},
+				{
+					"name": "New_userLoginFlow",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Mobile\": \"\"\n}" },
+						"url": "{{base_url}}/api/User/New_userLoginFlow"
+					}
+				},
+				{
+					"name": "New_User_OTP_Validation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Mobile\": \"\",\n  \"OTP\": \"\"\n}" },
+						"url": "{{base_url}}/api/User/New_User_OTP_Validation"
+					}
+				},
+				{
+					"name": "New_user_Signup_Details_update",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0,\n  \"Name\": \"\",\n  \"Email\": \"\"\n}" },
+						"url": "{{base_url}}/api/User/New_user_Signup_Details_update"
+					}
+				}
+			]
+		},
+		{
+			"name": "Customer",
+			"item": [
+				{
+					"name": "GetProjectsListBasedOnRange",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Latitude\": 0,\n  \"Longitude\": 0,\n  \"Range\": 10\n}" },
+						"url": "{{base_url}}/api/Customer/GetProjectsListBasedOnRange"
+					}
+				},
+				{
+					"name": "AddProject / UpdateProject",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 0,\n  \"Name\": \"\",\n  \"Address\": \"\",\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Customer/AddProject"
+					}
+				},
+				{
+					"name": "GetProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{base_url}}/api/Customer/GetProjects"
+					}
+				},
+				{
+					"name": "GetProjectByID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Customer/GetProjectByID"
+					}
+				},
+				{
+					"name": "AddPlots / UpdatePlots",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "[{\n  \"PlotID\": 0,\n  \"ProjectID\": 1,\n  \"UserID\": 0\n}]" },
+						"url": "{{base_url}}/api/Customer/AddPlots"
+					}
+				},
+				{
+					"name": "GetPlots / GetPlotsByID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Customer/GetPlots"
+					}
+				},
+				{
+					"name": "AssignProjects / AssignPlots",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"UserID\": 0,\n  \"PlotID\": [1]\n}" },
+						"url": "{{base_url}}/api/Customer/AssignPlots"
+					}
+				},
+				{
+					"name": "SaveImages",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" }],
+						"body": { "mode": "formdata", "formdata": [{ "key": "file", "type": "file", "src": "" }] },
+						"url": "{{base_url}}/api/Customer/SaveImages"
+					}
+				},
+				{
+					"name": "PlotSold",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"PlotID\": 1,\n  \"ProjectID\": 1,\n  \"IsSold\": 1\n}" },
+						"url": "{{base_url}}/api/Customer/PlotSold"
+					}
+				},
+				{
+					"name": "GetPlotsforApprovel",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Customer/GetPlotsforApprovel"
+					}
+				},
+				{
+					"name": "ApprovePlots",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"PlotIDs\": [1],\n  \"ProjectID\": 1\n}" },
+						"url": "{{base_url}}/api/Customer/ApprovePlots"
+					}
+				},
+				{
+					"name": "GetPendingAgents",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Customer/GetPendingAgents"
+					}
+				},
+				{
+					"name": "ApproveAgents",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "[{\n  \"UserID\": 0,\n  \"ProjectID\": 1,\n  \"IsApproved\": true\n}]" },
+						"url": "{{base_url}}/api/Customer/ApproveAgents"
+					}
+				},
+				{
+					"name": "LikeProject",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"UserID\": 0,\n  \"isLiked\": true\n}" },
+						"url": "{{base_url}}/api/Customer/LikeProject"
+					}
+				},
+				{
+					"name": "GetLikedProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Customer/GetLikedProjects"
+					}
+				},
+				{
+					"name": "EnquiryProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Customer/EnquiryProjects"
+					}
+				},
+				{
+					"name": "CompleteEnquiryProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Customer/CompleteEnquiryProjects"
+					}
+				},
+				{
+					"name": "GetEnquiryProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Customer/GetEnquiryProjects"
+					}
+				},
+				{
+					"name": "uploadPhoto",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"PlotID\": 0,\n  \"FileName\": \"\"\n}" },
+						"url": "{{base_url}}/api/Customer/uploadPhoto"
+					}
+				},
+				{
+					"name": "ChangeCoverPhoto",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"PlotID\": 0,\n  \"FileName\": \"\"\n}" },
+						"url": "{{base_url}}/api/Customer/ChangeCoverPhoto"
+					}
+				},
+				{
+					"name": "AddProjectRoadsInfo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"RoadsInfo\": []\n}" },
+						"url": "{{base_url}}/api/Customer/AddProjectRoadsInfo"
+					}
+				},
+				{
+					"name": "AddRecentVisitedProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ProjectID\": 1,\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Customer/AddRecentVisitedProjects"
+					}
+				},
+				{
+					"name": "GetRecentVisitedProjects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Customer/GetRecentVisitedProjects"
+					}
+				},
+				{
+					"name": "AddUser / AddEndUser",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Name\": \"\",\n  \"Email\": \"\",\n  \"Mobile\": \"\",\n  \"Role\": 0\n}" },
+						"url": "{{base_url}}/api/Customer/AddUser"
+					}
+				},
+				{
+					"name": "GetUsers",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{base_url}}/api/Customer/GetUsers"
+					}
+				},
+				{
+					"name": "GetRoles",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{base_url}}/api/Customer/GetRoles"
+					}
+				},
+				{
+					"name": "GetEndUsers",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{base_url}}/api/Customer/GetEndUsers"
+					}
+				},
+				{
+					"name": "GetUsersByMobile",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Mobile\": \"\"\n}" },
+						"url": "{{base_url}}/api/Customer/GetUsersByMobile"
+					}
+				},
+				{
+					"name": "CreateUser / CreateEndUser",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"Name\": \"\",\n  \"Mobile\": \"\",\n  \"Role\": 0\n}" },
+						"url": "{{base_url}}/api/Customer/CreateUser"
+					}
+				},
+				{
+					"name": "GetUsersHierarchy",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"UserID\": 0\n}" },
+						"url": "{{base_url}}/api/Customer/GetUsersHierarchy"
+					}
+				},
+				{
+					"name": "GetAgents",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "x-api-key", "value": "{{api_key}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": "{{base_url}}/api/Customer/GetAgents"
+					}
+				}
+			]
+		}
+	]
+}
