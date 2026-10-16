@@ -1416,5 +1416,25 @@ namespace RE.Controllers
             }
             return jsonconvert(res);
         }
+
+
+        [Route("api/Project/DeleteProjectRoads")]
+        [HttpPost]
+        public HttpResponseMessage DeleteProjectRoads(ProjectRoads project)
+        {
+            ProjectStaticResponce res = new ProjectStaticResponce();
+            bool responce = dblogic.DeleteProjectRoads(project);
+            if (responce)
+            {
+                res.StatusCode = 200;
+                res.Message = "Road deleted Successfully";
+            }
+            else
+            {
+                res.StatusCode = 500;
+                res.Message = "Internal Server Error";
+            }
+            return jsonconvert(res);
+        }
     }
 }

@@ -631,7 +631,7 @@ namespace RE.BusinesLogic
 
                                 RoadsInfo projRoadsInfo = new RoadsInfo();
 
-                                DataRow[] drRoadsInfo = dsRoadsInfo.Tables[1].Select("ProjectID = '" + pID.ToString() + "'");
+                                DataRow[] drRoadsInfo = dsRoadsInfo.Tables[1].Select("ProjectID = '" + pID.ToString() + "' AND RoadNo ='" + rID.ToString() + "'");
 
                                 projRoadsInfo.projectID = Convert.ToInt32(drRoadsInfo[0]["ProjectID"].ToString());
                                 projRoadsInfo.userID = Convert.ToInt32(drRoadsInfo[0]["CreatedBy"].ToString());
@@ -4236,6 +4236,40 @@ namespace RE.BusinesLogic
             }
 
             return responce;
+        }
+
+
+        public bool DeleteProjectRoads(ProjectRoads project)
+        {
+            bool isSuccess = false;
+            var ds = new DataSet();
+            try
+            {
+
+                using (var sqlCon = new SqlConnection(SqlconString))
+                {
+                    sqlCon.Open();
+                    using (var sql_cmnd = new SqlCommand("usp_DeleteProjectRoad", sqlCon))
+                    {
+                        sql_cmnd.CommandType = CommandType.StoredProcedure;
+                        sql_cmnd.Parameters.AddWithValue("@ProjectID", SqlDbType.Int).Value = project.ProjectID;
+                        sql_cmnd.Parameters.AddWithValue("@UserID", SqlDbType.Int).Value = project.UserID;
+                        sql_cmnd.Parameters.AddWithValue("@RoadNo", SqlDbType.Int).Value = project.RoadNo;
+
+                        SqlDataAdapter da = new SqlDataAdapter(sql_cmnd);
+                        da.Fill(ds);
+                        sqlCon.Close();
+
+                        isSuccess = true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ExceptionLogs("DBLogic", "DeleteProjectRoads", ex.ToString());
+                ds = new DataSet();
+            }
+            return isSuccess;
         }
     }
 }

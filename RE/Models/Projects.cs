@@ -402,4 +402,11 @@ namespace RE.Models
         public int ProjectID { get; set; }
         public int LoginUserID { get; set; }
     }
+
+    public class ProjectRoads
+    {
+        public int UserID { get; set; }
+        public int ProjectID { get; set; }
+        public int RoadNo { get; set; }
+    }
 }
