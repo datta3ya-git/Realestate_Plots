@@ -85,6 +85,8 @@ namespace RE.Models
         public int ReviewCount { get; set; }
         public decimal AverageRating { get; set; }
 
+        public string VenturePositionChange { get; set; }
+
     }
 
     public class ProjectsAttachments

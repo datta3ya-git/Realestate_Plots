@@ -376,6 +376,7 @@ namespace RE.BusinesLogic
                     cmd.Parameters.AddWithValue("@Org_id", SqlDbType.Int).Value = project.Org_id == 0 ? 1 : project.Org_id;
                     cmd.Parameters.AddWithValue("@ApprochRoads", SqlDbType.VarChar).Value = project.ApprochRoads == null ? EMPTY_STRING : JsonConvert.SerializeObject(project.ApprochRoads);
                     cmd.Parameters.AddWithValue("@MapAngle", SqlDbType.VarChar).Value = string.IsNullOrWhiteSpace(project.MapAngle) ? "0" : project.MapAngle;
+                    cmd.Parameters.AddWithValue("@VenturePositionChange", SqlDbType.VarChar).Value = string.IsNullOrWhiteSpace(project.VenturePositionChange) ? "" : project.VenturePositionChange;
                 });
 
                 if (response == STATUS_SUCCESS && project.ProjectID == 0)
@@ -672,7 +673,8 @@ namespace RE.BusinesLogic
                             objProj.ApprochRoads = JsonConvert.DeserializeObject<List<ApproachRoads>>(dr["ApprochRoads"] != null ? dr["ApprochRoads"].ToString() : "");
 
                         objProj.MapAngle = dr["MapAngle"] != null ? dr["MapAngle"].ToString() : "";
-
+                        objProj.VenturePositionChange = dr["VenturePositionChange"] != null ? dr["VenturePositionChange"].ToString() : "";
+                        
                     }
 
                 }
